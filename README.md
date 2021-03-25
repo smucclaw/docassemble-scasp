@@ -39,8 +39,11 @@ In your docassemble interview, add the following lines:
 
 ```
 include:
-  - DAScasp.yml
+  - docassemble.scasp:DAScasp.yml
 ```
+
+(Note that if you have loaded DAScasp into your docassemble playground, and not installed on your docassemble server, the syntax for
+including the DAScasp.yml file does not require the package name.)
 
 ### Specify a Rule Source, and a Query
 
