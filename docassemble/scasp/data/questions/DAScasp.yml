@@ -1,0 +1,50 @@
+modules:
+  - .DAScasp
+---
+objects:
+  - database: DAFile.using(filename='temp_dascasp_db.txt')
+  - rules: DAStaticFile.using(filename=ruleSource)
+---
+features:
+  javascript: list_collapse.js
+  css: list_collapse.css
+---
+template: DAScasp_show_answers
+content: |
+  You asked:
+  **${ answer['query'] }**
+  
+  The reasoner answered:
+  **${ answer['result'] }**
+  
+  % if answer['result'] == 'Yes':
+  % for model in answer['answers']:
+  #### Scenario
+  %if 'bindings' in model:
+  % for b in model['bindings']:
+  * ${ b }
+  % endfor
+  % endif
+  
+  
+  ##### Why? (click to expand)
+  ${ model['explanations'] }
+  
+  % if show_models:
+  ##### Formal Model
+  `${ model['model'] }`
+  % endif
+
+  % endfor
+  % endif
+---
+code: |
+  database.initialize()
+  if not defined('scasp_number'):
+    scasp_number = 1
+  facts
+  database.write(facts + rules.slurp() + "\n?- " + query)
+  answer = sendQuery(database.path(), scasp_number)
+  if not defined('show_models'):
+    show_models = False
+---

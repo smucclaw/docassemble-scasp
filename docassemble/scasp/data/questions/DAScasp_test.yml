@@ -1,0 +1,18 @@
+---
+include:
+  - DAScasp.yml
+---
+mandatory: True
+code: |
+  facts = ""
+  ruleSource = "mortal.pl"
+  query = "mortal(X)."
+---
+mandatory: True
+question: s(CASP) Test
+subquestion: |
+  If s(CASP) and the DAScasp package is properly installed, you should see an explanation below for
+  why Socrates is Mortal.
+  
+  ${ DAScasp_show_answers }
+---  
