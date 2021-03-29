@@ -24,7 +24,9 @@ If you do not have these lines in your configuration, it will presume that scasp
 
 ## Testing
 
-It should create an interview called 'DAScasp_test.yml'. Run that interview, and it should generate the following screen:
+It should create an interview called 'DAScasp_test.yml'. Run that interview by going to the following address, replacing your host name
+as appropriate: `http://localhost/interview?i=docassemble.scasp:DAScasp_test.yml`. You should see an answer that answers that Socrates is mortal
+and explains why.
 
 ## Usage
 
@@ -37,8 +39,11 @@ In your docassemble interview, add the following lines:
 
 ```
 include:
-  - DAScasp.yml
+  - docassemble.scasp:DAScasp.yml
 ```
+
+(Note that if you have loaded DAScasp into your docassemble playground, and not installed on your docassemble server, the syntax for
+including the DAScasp.yml file does not require the package name.)
 
 ### Specify a Rule Source, and a Query
 
