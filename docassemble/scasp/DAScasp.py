@@ -7,7 +7,7 @@ from docassemble.base.functions import get_config
 # Send an s(CASP) file to the reasoner and return the results.
 def sendQuery(filename, number=0):
     number_flag = "-s" + str(number)
-    scasp_location = get_config('scasp')['location'] if get_config('scasp')['location'] else '/var/www/.ciao/build/bin/scasp'
+    scasp_location = get_config('scasp')['location'] if (get_config('scasp') and get_config('scasp')['location']) else '/var/www/.ciao/build/bin/scasp'
     results = subprocess.run([scasp_location, '--human', '--tree', number_flag, filename], capture_output=True).stdout.decode('utf-8')
     
     output = {}
