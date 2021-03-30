@@ -41,7 +41,7 @@ content: |
 code: |
   database.initialize()
   if not defined('scasp_number'):
-    scasp_number = 1
+    scasp_number = 0
   facts
   database.write(facts + rules.slurp() + "\n?- " + query)
   answer = sendQuery(database.path(), scasp_number)
