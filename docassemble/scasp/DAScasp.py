@@ -5,19 +5,18 @@ import subprocess
 import urllib.parse
 import re
 from docassemble.base.functions import get_config
-from docassemble.base.util import log
 
 # Send an s(CASP) file to the reasoner and return the results.
 def sendQuery(filename, number=0):
     number_flag = "-s" + str(number)
     scasp_location = get_config('scasp')['location'] if (get_config('scasp') and get_config('scasp')['location']) else '/var/www/.ciao/build/bin/scasp'
     results = subprocess.run([scasp_location, '--human', '--tree', number_flag, filename], capture_output=True).stdout.decode('utf-8')
-    log(results, "info")
+    
     pattern = re.compile(r"daSCASP_([^),\s]*)", re.M)
     matches = list(pattern.finditer(results))
     for m in matches:
         results = results.replace(m.group(0),urllib.parse.unquote_plus(m.group(1).replace('__perc__','%').replace('__plus__','+')))
-    log(results, "info")
+    
     output = {}
 
     # If result is no models
