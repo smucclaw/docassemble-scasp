@@ -2,6 +2,8 @@
 # tool from inside a Docassemble interview.
 
 import subprocess
+import urllib
+import re
 from docassemble.base.functions import get_config
 
 # Send an s(CASP) file to the reasoner and return the results.
@@ -10,6 +12,11 @@ def sendQuery(filename, number=0):
     scasp_location = get_config('scasp')['location'] if (get_config('scasp') and get_config('scasp')['location']) else '/var/www/.ciao/build/bin/scasp'
     results = subprocess.run([scasp_location, '--human', '--tree', number_flag, filename], capture_output=True).stdout.decode('utf-8')
     
+    pattern = re.compile(r"daSCASP_([^),\s]*)")
+    matches = pattern.finditer(results)
+    for m in matches:
+        results.replace(m.group(0),urllib.parse.unquote_plus(m.group(1).replace('__perc__','%')))
+
     output = {}
 
     # If result is no models
@@ -69,6 +76,13 @@ def sendQuery(filename, number=0):
         
         # Now add the output answers to the result
         return output
+
+def unencode(string):
+    # For every string starting with daSCASP_ until space or punctuation
+    # remove the daSCASP, replace each instance of __perc__ with a % sign,
+    # then urllib.parse.unquote_plus() it to get back the orignal content.
+
+    pass
 
 def get_depths(lines):
     output = []
