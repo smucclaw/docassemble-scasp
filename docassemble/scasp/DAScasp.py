@@ -2,7 +2,7 @@
 # tool from inside a Docassemble interview.
 
 import subprocess
-import urllib
+import urllib.parse
 import re
 from docassemble.base.functions import get_config
 
@@ -13,7 +13,7 @@ def sendQuery(filename, number=0):
     results = subprocess.run([scasp_location, '--human', '--tree', number_flag, filename], capture_output=True).stdout.decode('utf-8')
     
     pattern = re.compile(r"daSCASP_([^),\s]*)")
-    matches = list(pattern.finditer(results))
+    matches = pattern.finditer(results)
     for m in matches:
         results = results.replace(m.group(0),urllib.parse.unquote_plus(m.group(1).replace('__perc__','%').replace('__plus__','+')))
 
