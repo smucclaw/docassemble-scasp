@@ -15,7 +15,7 @@ def sendQuery(filename, number=0):
     pattern = re.compile(r"daSCASP_([^),\s]*)")
     matches = pattern.finditer(results)
     for m in matches:
-        results.replace(m.group(0),urllib.parse.unquote_plus(m.group(1).replace('__perc__','%').replace('__plus__','+')))
+        results = results.replace(m.group(0),urllib.parse.unquote_plus(m.group(1).replace('__perc__','%').replace('__plus__','+')))
 
     output = {}
 
