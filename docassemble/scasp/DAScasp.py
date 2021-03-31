@@ -12,7 +12,7 @@ def sendQuery(filename, number=0):
     scasp_location = get_config('scasp')['location'] if (get_config('scasp') and get_config('scasp')['location']) else '/var/www/.ciao/build/bin/scasp'
     results = subprocess.run([scasp_location, '--human', '--tree', number_flag, filename], capture_output=True).stdout.decode('utf-8')
     
-    pattern = re.compile(r"daSCASP_([^),\s]*)", re.M)
+    pattern = re.compile(r"daSCASP_([^),\s]*)")
     matches = list(pattern.finditer(results))
     for m in matches:
         results = results.replace(m.group(0),urllib.parse.unquote_plus(m.group(1).replace('__perc__','%').replace('__plus__','+')))
