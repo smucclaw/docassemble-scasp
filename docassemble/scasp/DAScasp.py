@@ -1,15 +1,26 @@
 # A simple interface to the s(CASP) constraint answer set programming
 # tool from inside a Docassemble interview.
 
+import string
+import os
 import subprocess
 import urllib.parse
 import re
 from docassemble.base.functions import get_config
 
+# FOR TESTING ONLY
+#import yaml
+#data_structure_file = open('data/static/mortal.yml',"r")
+#data_structure = yaml.load(data_structure_file,Loader=yaml.FullLoader)
+#query = "?- mortal(X)."
+#rules = "#pred mortal(X) :: '@(X) is mortal'.\n#pred human(X) :: '@(X) is human'.\n#pred other(X) :: '@(X) is other'.\nmortal(X) :- human(X).\nmortal(X) :- other(X)."
+
+
 # Send an s(CASP) file to the reasoner and return the results.
 def sendQuery(filename, number=0):
     number_flag = "-s" + str(number)
-    scasp_location = get_config('scasp')['location'] if (get_config('scasp') and get_config('scasp')['location']) else '/var/www/.ciao/build/bin/scasp'
+    #scasp_location = get_config('scasp')['location'] if (get_config('scasp') and get_config('scasp')['location']) else '/var/www/.ciao/build/bin/scasp'
+    scasp_location = 'scasp'
     results = subprocess.run([scasp_location, '--human', '--tree', number_flag, filename], capture_output=True).stdout.decode('utf-8')
     
     pattern = re.compile(r"daSCASP_([^),\s]*)")
@@ -77,13 +88,6 @@ def sendQuery(filename, number=0):
         # Now add the output answers to the result
         return output
 
-def unencode(string):
-    # For every string starting with daSCASP_ until space or punctuation
-    # remove the daSCASP, replace each instance of __perc__ with a % sign,
-    # then urllib.parse.unquote_plus() it to get back the orignal content.
-
-    pass
-
 def get_depths(lines):
     output = []
     for l in lines:
@@ -141,3 +145,143 @@ def display_list(input,depth=0):
 
     output += "</ul>"
     return output
+
+def get_predicates(input):
+    predicates = []
+    predicate = re.compile(r"^\#pred ([^\s]*) :: ", re.M)
+    for p in predicate.finditer(input):
+        predicates.append(generalize_predicate(p.group(1)))
+    return predicates
+
+def get_rule_conclusions(input):
+    conclusions = set()
+    rule = re.compile(r"^([^\s]*) \:\- .*", re.M)
+    for r in rule.finditer(input):
+        conclusions.add(generalize_predicate(r.group(1)))
+    return conclusions
+
+def get_inputs(input):
+    predicates = get_predicates(input)
+    conclusions = get_rule_conclusions(input)
+    inputs = []
+    for p in predicates:
+        if p not in conclusions:
+            inputs.append(p)
+    return inputs
+
+def make_abducible(predicates):
+    output = ""
+    for p in predicates:
+        output += "#abducible " + expand_predicate(p) + ".\n"
+    return output
+
+def get_relevant(rules,query,facts=""):
+    # Find all the input predicates
+    inputs = get_inputs(rules)
+    # Create a temporary file
+    code = open('tempcode.pl','x')
+    # Add the rules to the temporary file
+    code.write(rules + "\n")
+    # Add the abducibility statements to the temporary file
+    code.write(make_abducible(inputs))
+    # Add the query to the temporary file.
+    code.write(query)
+    # Save the file
+    code.close()
+    # Run the code
+    results = sendQuery('tempcode.pl')
+    # Delete the temporary file
+    os.remove('tempcode.pl')
+    # Take the union of all of the predicates in all of the answers
+    # that are not conclusions
+    relevant = set()
+    conclusions = get_rule_conclusions(rules)
+    for a in results['answers']:
+        for p in a['model']:
+            if generalize_predicate(p) not in conclusions:
+                relevant.add(generalize_predicate(p))
+    # Later we will need to filter by more stuff.
+    return relevant
+
+def build_agenda(relevant,data_structure):
+    # Using a list of relevant predicates, create an agenda of questions
+    # to ask in the given interview.
+    agenda = set()
+    output = ""
+    for r in relevant:
+        for d in data_structure['data']:
+            target = find_element_for_encoding(d,expand_predicate(r))
+            if target:
+                agenda.add(target)
+    output += "agenda:\n"
+    for t in agenda:
+        output += "  - " + add_index(add_index(t)) + "\n"
+    return output
+
+def expand_predicate(predicate):
+    predicate_parts = re.compile(r"([^\/]*)\/(.*)")
+    match = predicate_parts.match(predicate)
+    output = match.group(1)
+    number = int(match.group(2))
+    if number > 0:
+        output += "(" + ','.join(string.ascii_uppercase[0:number]) + ")"
+    return output
+
+def generalize_predicate(predicate):
+    predicate_parts = re.compile(r"([^\(]*)(?:\(([^\)]*)\)){0,1}")
+    matches = predicate_parts.match(predicate)
+    if matches.group(2):
+        parameters = matches.group(2).split(',')
+    else:
+        parameters = []
+    return matches.group(1) + "/" + str(len(parameters))
+
+def find_element_for_encoding(data_element,encoding):
+    if 'encodings' in data_element:
+        for e in data_element['encodings']:
+            if expand_predicate(generalize_predicate(e)) == encoding:
+                if is_list(data_element):
+                    return data_element['name'] + '.gather()'
+                else:
+                    return data_element['name'] + '.value'
+    if 'attributes' in data_element:
+        for a in data_element['attributes']:
+            value = find_element_for_encoding(a,encoding)
+            if value:
+                if is_list(data_element):
+                    return data_element['name'] + "[LIST]." + value
+                else:
+                    return data_element['name'] + "." + value
+
+def add_index(agenda_item):
+    # Take a string and replace each instance of [LIST] with [i] through [m]
+    if agenda_item.count('LIST') > 5:
+        raise Exception('Docassemble cannot handle nested lists of depth > 5')
+    else:
+        return agenda_item.replace('LIST','i',1).replace('LIST','j',1).replace('LIST','k',1).replace('LIST','l',1).replace('LIST','m',1)
+
+def is_list(input):
+    # Something with exactly 1 or 0 values is not a list.
+    if 'exactly' in input and (input['exactly'] == 1 or input['exactly'] == 0):
+        return False
+    # Something with a minimum of more than one, or with a minumum and no maximum
+    # is a list
+    if 'minimum' in input:
+        if input['minimum'] > 1:
+            return True
+        if 'maximum' not in input:
+            return True
+    # Something with a maximum above one is a list
+    if 'maximum' in input and input['maximum'] > 1:
+        return True
+    # Something with an exact number above 1 is a list
+    if 'exactly' in input and input['exactly'] > 1:
+        return True
+    # Something that is optional should be treated as though it was a list
+    # in that you should ask whether it exists before collecting it, but only
+    # collect the one.
+    if 'minimum' in input and 'maximum' in input:
+        if input['minimum'] == 0 and input['maximum'] == 1:
+            return True
+    # Otherwise
+    return False
