@@ -285,3 +285,24 @@ def is_list(input):
             return True
     # Otherwise
     return False
+
+# OK, ds2dal4 has been updated. It is now expecting docassemble.scasp to provide
+# two functions, generate_agenda() and generate_subagenda().
+# agenda is a list of the root elements that should be collected.
+# subagenda is a list of the subelements that should be collected. The current
+# relevance list might be sufficient for subagenda. We need to find roots and
+# collect them for the agenda.
+
+# There are also going to be bugs in the relevance code that will be revealed
+# by the more complicated interview, undoubtedly. Let's go.
+
+def generate_agenda():
+    output = []
+    output += 'legal_practice.gather()'
+    return output
+
+def generate_subagenda():
+    output = []
+    output += 'legal_practice[i].value'
+    output += 'legal_practice[i].joint_law_venture.value'
+    return output
