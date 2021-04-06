@@ -8,6 +8,7 @@ import urllib.parse
 import re
 from docassemble.base.functions import get_config
 
+
 # FOR TESTING ONLY
 #import yaml
 #data_structure_file = open('data/static/mortal.yml',"r")
@@ -179,19 +180,23 @@ def get_relevant(rules,query,facts=""):
     # Find all the input predicates
     inputs = get_inputs(rules)
     # Create a temporary file
-    code = open('tempcode.pl','x')
+    code = DAFile()
+    code.initialize(filename="tempcode",extension="pl")
+    #code = open('tempcode.pl','x')
     # Add the rules to the temporary file
-    code.write(rules + "\n")
+    content = rules + "\n"
+    #code.write(rules + "\n")
     # Add the abducibility statements to the temporary file
-    code.write(make_abducible(inputs))
+    content += make_abducible(inputs)
+    #code.write(make_abducible(inputs))
     # Add the query to the temporary file.
-    code.write(query)
+    content += "?- " + query
+    #code.write(query)
     # Save the file
-    code.close()
+    code.write(contents)
+    #code.close()
     # Run the code
-    results = sendQuery('tempcode.pl')
-    # Delete the temporary file
-    os.remove('tempcode.pl')
+    results = sendQuery(code.path())
     # Take the union of all of the predicates in all of the answers
     # that are not conclusions
     relevant = set()
