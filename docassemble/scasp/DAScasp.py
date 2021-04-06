@@ -193,7 +193,7 @@ def get_relevant(rules,query,facts=""):
     content += "?- " + query
     #code.write(query)
     # Save the file
-    code.write(contents)
+    code.write(content)
     #code.close()
     # Run the code
     results = sendQuery(code.path())
