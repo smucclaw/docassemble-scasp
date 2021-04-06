@@ -206,17 +206,13 @@ def get_relevant(rules,query,facts=""):
 def build_agenda(relevant,data_structure):
     # Using a list of relevant predicates, create an agenda of questions
     # to ask in the given interview.
-    agenda = set()
-    output = ""
+    agenda = list()
     for r in relevant:
         for d in data_structure['data']:
             target = find_element_for_encoding(d,expand_predicate(r))
             if target:
-                agenda.add(target)
-    output += "agenda:\n"
-    for t in agenda:
-        output += "  - " + add_index(add_index(t)) + "\n"
-    return output
+                agenda.append(add_index(target))
+    return agenda
 
 def expand_predicate(predicate):
     predicate_parts = re.compile(r"([^\/]*)\/(.*)")
@@ -303,6 +299,16 @@ def generate_agenda():
 
 def generate_subagenda():
     output = []
-    output.append('legal_practice[i].value')
-    output.append('legal_practice[i].joint_law_venture.value')
-    return output
+    r = rules.slurp() 
+    q = "?- " + query
+    rel = get_relevant(r,q)
+    agenda = []
+    for r in rel:
+        for d in data_structure['data']:
+            target = find_element_for_encoding(d,expand_predicate(r))
+            if target:
+                agenda.append(add_index(target))
+    return agenda
+    #output.append('legal_practice[i].value')
+    #output.append('legal_practice[i].joint_law_venture.value')
+    #return output
