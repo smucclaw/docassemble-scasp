@@ -307,7 +307,7 @@ def generate_subagenda(rules,query,data_structure):
     rel = get_relevant(rules,query)
     agenda = []
     for r in rel:
-        for d in data_structure[0]['data']:
+        for d in data_structure['data']:
             target = find_element_for_encoding(d,expand_predicate(r))
             if target:
                 agenda.append(add_index(target))
