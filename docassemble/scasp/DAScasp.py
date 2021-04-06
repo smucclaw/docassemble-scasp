@@ -298,11 +298,11 @@ def is_list(input):
 
 def generate_agenda():
     output = []
-    output += 'legal_practice.gather()'
+    output.append('legal_practice.gather()')
     return output
 
 def generate_subagenda():
     output = []
-    output += 'legal_practice[i].value'
-    output += 'legal_practice[i].joint_law_venture.value'
+    output.append('legal_practice[i].value')
+    output.append('legal_practice[i].joint_law_venture.value')
     return output
