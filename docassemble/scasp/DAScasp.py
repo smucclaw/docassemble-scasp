@@ -288,30 +288,23 @@ def is_list(input):
     # Otherwise
     return False
 
-# OK, ds2dal4 has been updated. It is now expecting docassemble.scasp to provide
-# two functions, generate_agenda() and generate_subagenda().
-# agenda is a list of the root elements that should be collected.
-# subagenda is a list of the subelements that should be collected. The current
-# relevance list might be sufficient for subagenda. We need to find roots and
-# collect them for the agenda.
-
-# There are also going to be bugs in the relevance code that will be revealed
-# by the more complicated interview, undoubtedly. Let's go.
-
-def generate_agenda():
-    output = []
-    output.append('legal_practice.gather()')
-    return output
-
-def generate_subagenda(rules,query,data_structure):
+def generate_agendas(rules,query,data_structure):
     rel = get_relevant(rules,query)
-    agenda = []
+    subagenda = []
     for r in rel:
         for d in data_structure['data']:
             target = find_element_for_encoding(d,expand_predicate(r))
             if target:
-                agenda.append(add_index(target))
-    return agenda
-    #output.append('legal_practice[i].value')
-    #output.append('legal_practice[i].joint_law_venture.value')
-    #return output
+                subagenda.append(add_index(target))
+    agenda = set()
+    for s in subagenda:
+        agenda.add(find_root(s))
+    return (list(agenda), subagenda)
+
+def find_root(s):
+    pattern = re.compile(r"([^\[]*)\[[ijklm]\].*")
+    match = pattern.match(s)
+    if match:
+        return match.group(1) + ".gather()"
+    else:
+        return s
