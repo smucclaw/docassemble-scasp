@@ -197,7 +197,7 @@ def get_relevant(rules,query,facts=""):
     code.write(content)
     #code.close()
     # Run the code
-    results = sendQuery(code.path())
+    results = sendQuery(code.path(),10) #just to see
     # Take the union of all of the predicates in all of the answers
     # that are not conclusions
     relevant = set()
