@@ -7,6 +7,7 @@ import subprocess
 import urllib.parse
 import re
 from docassemble.base.functions import get_config
+from docassemble.base.core import DAFile
 
 
 # FOR TESTING ONLY
