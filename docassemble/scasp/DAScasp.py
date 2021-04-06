@@ -297,11 +297,8 @@ def generate_agenda():
     output.append('legal_practice.gather()')
     return output
 
-def generate_subagenda():
-    output = []
-    r = rules.slurp() 
-    q = "?- " + query
-    rel = get_relevant(r,q)
+def generate_subagenda(rules,query):
+    rel = get_relevant(rules,query)
     agenda = []
     for r in rel:
         for d in data_structure['data']:
