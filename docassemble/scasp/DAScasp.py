@@ -12,9 +12,11 @@ from docassemble.base.core import DAFile
 
 # FOR TESTING ONLY
 #import yaml
-#data_structure_file = open('data/static/mortal.yml',"r")
+#data_structure_file = open('r34.yml',"r")
 #data_structure = yaml.load(data_structure_file,Loader=yaml.FullLoader)
-#query = "?- mortal(X)."
+#query = "?- legally_holds(Rule,must_not(Lawyer,accept,Position))."
+#rules_file = open('r34.pl',"r")
+#rules = rules_file.read()
 #rules = "#pred mortal(X) :: '@(X) is mortal'.\n#pred human(X) :: '@(X) is human'.\n#pred other(X) :: '@(X) is other'.\nmortal(X) :- human(X).\nmortal(X) :- other(X)."
 
 
@@ -148,18 +150,42 @@ def display_list(input,depth=0):
     output += "</ul>"
     return output
 
+exclusions = [
+    'rule/1',
+    'conclusion/1',
+    'conclusion/3', # Should be removed later.
+    'legally_holds/2',
+    'according_to/2',
+    'according_to/4', # should be removed later.
+    'overrides/4',
+    'opposes/4',
+    'rebutted_by/4',
+    'refuted_by/4',
+    'compromised/2',
+    'defeated_by_closure/4',
+    'disqualified/2',
+    'defeated/2',
+    'defeated_by_rebuttal/4',
+    'defeated_by_refutation/4',
+    'defeated_by_disqualification/4',
+    'opposes2/4',
+    'unsafe_rebutted_by/4'
+]
+
 def get_predicates(input):
-    predicates = []
+    predicates = set()
     predicate = re.compile(r"^\#pred ([^\s]*) :: ", re.M)
     for p in predicate.finditer(input):
-        predicates.append(generalize_predicate(p.group(1)))
-    return predicates
+        if generalize_predicate(p.group(1)) not in exclusions:
+            predicates.add(generalize_predicate(p.group(1)))
+    return list(predicates)
 
 def get_rule_conclusions(input):
     conclusions = set()
-    rule = re.compile(r"^([^\s]*) \:\- .*", re.M)
+    rule = re.compile(r"^([^\s]*) \:\-", re.M)
     for r in rule.finditer(input):
-        conclusions.add(generalize_predicate(r.group(1)))
+        if generalize_predicate(r.group(1)) not in exclusions:
+            conclusions.add(generalize_predicate(r.group(1)))
     return conclusions
 
 def get_inputs(input):
@@ -177,6 +203,10 @@ def make_abducible(predicates):
         output += "#abducible " + expand_predicate(p) + ".\n"
     return output
 
+# TODO: Stop it from using both kinds of negation.
+# TODO: It is mis-counting the number of elements in predicates that have functions
+# as parameters. Remove the unnecessary exclusions when that is fixed.
+
 def get_relevant(rules,query,facts=""):
     # Find all the input predicates
     inputs = get_inputs(rules)
@@ -192,19 +222,23 @@ def get_relevant(rules,query,facts=""):
     #code.write(make_abducible(inputs))
     # Add the query to the temporary file.
     content += "?- " + query
-    #code.write(query)
+    #code.write(query.replace('legally_holds','according_to'))
     # Save the file
     code.write(content)
     #code.close()
     # Run the code
     results = sendQuery(code.path(),10) #just to see
+    #results = sendQuery('tempcode.pl',10)
     # Take the union of all of the predicates in all of the answers
     # that are not conclusions
     relevant = set()
     conclusions = get_rule_conclusions(rules)
     for a in results['answers']:
         for p in a['model']:
-            if generalize_predicate(p) not in conclusions:
+            if generalize_predicate(p) not in conclusions and \
+               generalize_predicate(p) not in exclusions and \
+               not generalize_predicate(p).startswith('not') and \
+               not generalize_predicate(p).startswith('-'):
                 relevant.add(generalize_predicate(p))
     # Later we will need to filter by more stuff.
     return relevant
