@@ -7,7 +7,7 @@ import subprocess
 import urllib.parse
 import re
 from docassemble.base.functions import get_config
-from docassemble.base.core import DAFile
+from docassemble.base.core import DAFile, DAObject
 
 
 # FOR TESTING ONLY
@@ -786,3 +786,73 @@ def is_list(input):
             return True
     # Otherwise
     return False
+
+
+def get_initially_relevant(query,base_code):
+    # The algorithm her requires that it recursively search through the conditions of
+    # rules until it finds conditions that are exclusively input predicates, then
+    # work it's way back while cutting off the searches it has already finished.
+    # So the process should be slow at the start and should speed up as it goes.
+    # In order to make that work, the algorithm need to be recursive, but not
+    # the list of problems it has already solved. So the inner verson of the function
+    # passes an object so that the values of the object can be changed inside the
+    # recursive function, and those changes will persist after the function returns.
+    mapping_object = DAObject()
+    mapping_object.mapped = set()
+    mapping_object.relevant = set()
+    mapping_object.base_code = "something"
+    mapping_object.inputs = get_inputs(base_code)
+    mapping_object.derived = get_rule_conclusions(base_code)
+    mapping_object.query = query
+    # TODO Figure out what the query predicate is.
+    query_predicate = "TODO"
+    get_initially_relevant_inner(query_predicate,mapping_object)
+    return mapping_object.relevant
+    
+def get_initially_relevant_inner(current,mapping_object,expected=1):
+    # Run the target query seeking n results starting at n=1
+    # Generate the code
+    # Take the existing code base.
+    temp_code = ""
+    # TODO Remove any statements that derive predicates that are already mapped.
+    rule_pattern = re.compile('DO SOMETHING TO FIND RULES MULTI_LINE STYLE< AND GROUP OUT THE CONCLUSION')
+    rules = rule_pattern.findall(mapping_object.base_code)
+    temp_code += mapping_object.base_code
+    for r in rules:
+        if r.group(1) in mapping_object.mapped:
+             temp_code.replace(r.group(0),'')
+    # Add abducibility statements for the mapped predicates.
+    temp_code += make_abducible(mapping_object.mapped)
+    # Add abducibility statements for the input predicates.
+    temp_code += make_abducible(mapping_object.inputs)
+    # Add the query.
+    temp_code += mapping_object.query + "\n"
+    code = DAFile()
+    code.initialize(filename="tempcode",extension="pl")
+    code.write(temp_code)
+    result = sendQuery(code.path(), number=expected)
+    if 'answers' in result:
+        number_of_answers = len(result['answers'])
+    else:
+        number_of_answers = 0
+    # If you get n results, analyze result n.
+    if number_of_answers == expected:
+        current_answer = result['answers'][expected-1]
+        # Get the list of all unmapped derived predicates.
+        derived_predicates_in_model = [x for x in result['answers'][current_answer]['model'] if x in mapping_object.derived]
+        unmapped_derived_predicates_in_model = [x for x in derived_predicates_in_model if x not in mapping_object.mapped]
+        # If there are unmapped derived predicate, run this function once against each of them.
+        for new_predicate in unmapped_derived_predicates_in_model:
+            get_initially_relevant_inner(new_predicate,mapping_object)
+            mapping_object.mapped.add(new_predicate)
+        # Once? this predicate doesn't have any more unmapped predicates?
+        # Add all of the input predicates present to the relevance list.
+        for i in [x for x in result['answers'][current_answer]['model'] if x in mapping_object.inputs]:
+            mapping_object.relevant.add(i)
+        # Increase n by 1 and start again.
+        get_initially_relevant_inner(current,mapping_object,expected+1)
+    # If you get n-1 results:
+    elif number_of_answers == expected-1:
+        return
+    else:
+        raise error("Got an unexpected number of answers.")
