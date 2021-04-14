@@ -6,8 +6,8 @@ import os
 import subprocess
 import urllib.parse
 import re
-from docassemble.base.functions import get_config
-from docassemble.base.core import DAFile, DAObject
+#from docassemble.base.functions import get_config
+#from docassemble.base.core import DAFile, DAObject
 
 
 # FOR TESTING ONLY
@@ -23,8 +23,8 @@ from docassemble.base.core import DAFile, DAObject
 # Send an s(CASP) file to the reasoner and return the results.
 def sendQuery(filename, number=0):
     number_flag = "-s" + str(number)
-    scasp_location = get_config('scasp')['location'] if (get_config('scasp') and get_config('scasp')['location']) else '/var/www/.ciao/build/bin/scasp'
-    #scasp_location = 'scasp'
+    #scasp_location = get_config('scasp')['location'] if (get_config('scasp') and get_config('scasp')['location']) else '/var/www/.ciao/build/bin/scasp'
+    scasp_location = 'scasp'
     results = subprocess.run([scasp_location, '--human', '--tree', number_flag, filename], capture_output=True).stdout.decode('utf-8')
     
     pattern = re.compile(r"daSCASP_([^),\s]*)")
@@ -174,7 +174,7 @@ exclusions = [
 
 def get_predicates(input):
     predicates = set()
-    predicate = re.compile(r"^\#pred ([^\s]*) :: ", re.M)
+    predicate = re.compile(r"^\#pred ([^-][^\s]*) :: ", re.M)
     for p in predicate.finditer(input):
         if generalize_predicate(p.group(1)) not in exclusions:
             predicates.add(generalize_predicate(p.group(1)))
@@ -263,8 +263,18 @@ def expand_predicate(predicate):
         output += "(" + ','.join(string.ascii_uppercase[0:number]) + ")"
     return output
 
+
 def generalize_predicate(predicate):
-    predicate_parts = re.compile(r"([^\(]*)(?:\(([^\)]*)\)){0,1}")
+    predicate_parts = re.compile(r"[^\s(),]*(\(.*)\)?")
+    matches = predicate_parts.match(predicate)
+    if matches:
+        if matches.group(1): #The predicate has parameters
+            parameters = re.compile(r"[^\s(),]+(?:\([^\)]+\))?")
+            param_matches = parameters.findall(matches.group(1))
+            for pm in param_matches:
+                predicate = predicate.replace(pm,pm.replace(',','_').replace('(','_').replace(')',"_"))
+                
+    predicate_parts = re.compile(r"([^\(]*)(?:\(([^\)]*)\))?")
     matches = predicate_parts.match(predicate)
     if matches.group(2):
         parameters = matches.group(2).split(',')
@@ -787,8 +797,17 @@ def is_list(input):
     # Otherwise
     return False
 
+class map_object(object):
+    def __init__(self):
+        self.mapped = set()
+        self.relevant = set()
+        self.base_code = ""
+        self.inputs = []
+        self.derived = []
+        self.query = ""
 
 def get_initially_relevant(query,base_code):
+    print('Starting relevance search.\n')
     # The algorithm her requires that it recursively search through the conditions of
     # rules until it finds conditions that are exclusively input predicates, then
     # work it's way back while cutting off the searches it has already finished.
@@ -797,62 +816,97 @@ def get_initially_relevant(query,base_code):
     # the list of problems it has already solved. So the inner verson of the function
     # passes an object so that the values of the object can be changed inside the
     # recursive function, and those changes will persist after the function returns.
-    mapping_object = DAObject()
+    mapping_object = map_object()
     mapping_object.mapped = set()
     mapping_object.relevant = set()
-    mapping_object.base_code = "something"
+    mapping_object.base_code = base_code
     mapping_object.inputs = get_inputs(base_code)
     mapping_object.derived = get_rule_conclusions(base_code)
     mapping_object.query = query
-    # TODO Figure out what the query predicate is.
-    query_predicate = "TODO"
+    mapping_object.deferred = set()
+    query_predicate = generalize_predicate(query)
     get_initially_relevant_inner(query_predicate,mapping_object)
     return mapping_object.relevant
-    
+
+def simplify_model_predicate(model_predicate):
+    model_predicate = model_predicate.replace('not ','').replace('-','')
+    constraint = re.compile(r"\| \{[^\}]*\}")
+    model_predicate = constraint.sub('',model_predicate)
+    return generalize_predicate(model_predicate)
+
 def get_initially_relevant_inner(current,mapping_object,expected=1):
     # Run the target query seeking n results starting at n=1
     # Generate the code
     # Take the existing code base.
     temp_code = ""
-    # TODO Remove any statements that derive predicates that are already mapped.
-    rule_pattern = re.compile('DO SOMETHING TO FIND RULES MULTI_LINE STYLE< AND GROUP OUT THE CONCLUSION')
-    rules = rule_pattern.findall(mapping_object.base_code)
+    # Remove any statements that derive predicates that are already mapped.
+    rule_pattern = re.compile(r"([^\s]*) :-\s+([^\.]*)\.\s*", re.MULTILINE | re.DOTALL) 
     temp_code += mapping_object.base_code
-    for r in rules:
-        if r.group(1) in mapping_object.mapped:
-             temp_code.replace(r.group(0),'')
+    # print("Removing rules for mapped predicates...\n")
+    for r in rule_pattern.finditer(mapping_object.base_code):
+        #print("Comparing " + generalize_predicate(r[1]) + " to list of mapped " + str(mapping_object.mapped))
+        if generalize_predicate(r[1]) in mapping_object.mapped:
+            #print("Removing " + generalize_predicate(r[1]) + ".\n")
+            temp_code = temp_code.replace(r[0],'% Removed ' + generalize_predicate(r[1]) + ".\n")
     # Add abducibility statements for the mapped predicates.
-    temp_code += make_abducible(mapping_object.mapped)
+    # print("Making mapped predicates abducible...\n" + str(mapping_object.mapped) + "\n")
+    temp_code += '\n' + make_abducible(mapping_object.mapped)
     # Add abducibility statements for the input predicates.
-    temp_code += make_abducible(mapping_object.inputs)
+    # print("Making input predicates abducible...\n" + str(mapping_object.inputs) + "\n")
+    temp_code += '\n' + make_abducible(mapping_object.inputs)
     # Add the query.
-    temp_code += mapping_object.query + "\n"
-    code = DAFile()
-    code.initialize(filename="tempcode",extension="pl")
+    # print("Adding query " + expand_predicate(current) + ".\n")
+    temp_code += "?- " + expand_predicate(current) + ".\n"
+    #code = DAFile()
+    #code.initialize(filename="tempcode",extension="pl")
+    #code.write(temp_code)
+    #result = sendQuery(code.path(), number=expected)
+    code = open('tempfile.pl', "w")
     code.write(temp_code)
-    result = sendQuery(code.path(), number=expected)
+    code.close()
+    print("Seeking model #" + str(expected) + " for " + current + "...")
+    result = sendQuery(code.name, number=expected)
+    os.remove(code.name)
     if 'answers' in result:
+        #print("Answers received.\n")
         number_of_answers = len(result['answers'])
     else:
+        #print("No answers received.\n")
         number_of_answers = 0
     # If you get n results, analyze result n.
     if number_of_answers == expected:
+        #print("Expected number of answers received, " + str(expected) + ".\n")
         current_answer = result['answers'][expected-1]
         # Get the list of all unmapped derived predicates.
-        derived_predicates_in_model = [x for x in result['answers'][current_answer]['model'] if x in mapping_object.derived]
-        unmapped_derived_predicates_in_model = [x for x in derived_predicates_in_model if x not in mapping_object.mapped]
+        #print("The model is " + str(current_answer['model']) + ".\n")
+        simplified_model = [simplify_model_predicate(p) for p in current_answer['model']]
+        #print("The simplified model is " + str(simplified_model) + ".\n")
+        derived_predicates_in_model = [x for x in simplified_model if x in mapping_object.derived]
+        #print("The derived predicates present are " + str(derived_predicates_in_model) + ".\n")
+        unmapped_derived_predicates_in_model = [x for x in derived_predicates_in_model if x not in mapping_object.mapped and x != current and x not in mapping_object.deferred]
+        #print("The unmapped derived, non-query, non-deferred predicates present are " + str(unmapped_derived_predicates_in_model) + ".\n")
         # If there are unmapped derived predicate, run this function once against each of them.
         for new_predicate in unmapped_derived_predicates_in_model:
+            #print("Processing " + new_predicate + "...\n")
+            mapping_object.deferred.add(current)
             get_initially_relevant_inner(new_predicate,mapping_object)
+            mapping_object.deferred.remove(current)
+            print("  - Marking " + new_predicate + " as mapped.")
             mapping_object.mapped.add(new_predicate)
         # Once? this predicate doesn't have any more unmapped predicates?
         # Add all of the input predicates present to the relevance list.
-        for i in [x for x in result['answers'][current_answer]['model'] if x in mapping_object.inputs]:
+        for i in [x for x in simplified_model if x in mapping_object.inputs and x not in mapping_object.relevant]:
+            print("  - Adding " + i + " as relevant.")
             mapping_object.relevant.add(i)
         # Increase n by 1 and start again.
         get_initially_relevant_inner(current,mapping_object,expected+1)
     # If you get n-1 results:
     elif number_of_answers == expected-1:
+        #print("No more results for this query.\n")
         return
     else:
         raise error("Got an unexpected number of answers.")
+
+rules_file = open('docassemble/scasp/data/static/r34.pl',"r")
+rules = rules_file.read()
+print(str(get_initially_relevant('according_to(r34_4,may(LP,accept,EA))',rules)))
