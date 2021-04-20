@@ -6,9 +6,142 @@ import os
 import subprocess
 import urllib.parse
 import re
-#from docassemble.base.functions import get_config
-#from docassemble.base.core import DAFile, DAObject
+import sys
+import docassemble.scasp.scasp as scasp
+try:
+    from docassemble.base.functions import get_config
+    from docassemble.base.core import DAFile, DAObject
+except ModuleNotFoundError:
+    not_docassemble_context = True
 
+
+
+# OK, we need to organize this out better.
+# We have a number of things going on:
+# 1. Send information to the reasoner, and collect the results.
+# 2. Reformat those results for displaying to the user.
+# 3. Get Data about an s(CASP) file
+# 4. Generate an interview.
+# 5. Figure out what is relevant to a query. That is done to generate an interview.
+
+# So typically, you would have a reasoner object, which would have a query method,
+# and which would return an answer object.
+
+# Reasoner
+#   - send query, get results.
+#   - configure it?
+# Answer
+#   - just holds information about itself in a predictable structure.
+#   - maybe function for displaying it inside Docassemble, inside the major
+
+# Docassemble-scasp
+#   Depends on:
+#       scasp-reasoner
+#           Provides:
+#               - Ability to send queries to s(CASP) reasoner and receive Python
+#                 structured results
+#   Provides:
+#     - Ability to translate docassemble interview data into s(CASP) encodings (and back?).
+#     - Ability to display scasp responses in Docassemble pages.
+#     - Ability to configure the reasoner from inside the docassemble configuration files.
+
+class Response():
+    # A class which receives the text provided by an s(CASP) reasoner response,
+    # and creates self.raw and self.output from it.
+    # self.output is a dictionary with 'query' and 'result', and optionally 'answers' if there are any.
+    def __init__(self,input):
+        # Put code to build data structure from the input here.
+        self.raw = input
+        self.output = {}
+        # If result is no models
+        if input.endswith('no models\n\n'):
+            query = input.replace('\n\nno models\n\n','').replace('\n    ','').replace('QUERY:','')
+            self.output['query'] = query
+            self.output['result'] = 'No'
+            return
+        else:
+            # Divide up the remainder into individual answers
+            answers = input.split("\tANSWER:\t")
+            query = answers[0]
+            del answers[0]
+            query = query.replace('\n','').replace('     ',' ').replace('QUERY:','')
+            self.output['query'] = query
+            self.output['result'] = 'Yes'
+            self.output['answers'] = []
+            
+            # for each actual answer
+            for a in answers:
+                #Separate out the time, tree, model, and bindings
+                answer_parts = a.split('\n\nJUSTIFICATION_TREE:\n')
+                time = answer_parts[0]
+                answer_parts = answer_parts[1].split('\n\nMODEL:\n')
+                tree = answer_parts[0]
+                answer_parts = answer_parts[1].split('\n\nBINDINGS:')
+                model = answer_parts[0]
+                bindings = []
+                # The bindings may not exist
+                if len(answer_parts) > 1:
+                    bindings = answer_parts[1].splitlines()
+                # Reformat the Time
+                time = time.replace(' ms)','').replace('(in ','').split(' ')[1]
+
+                # Reformat the Tree Into Nested Dictionary, or something like that.
+                explanations = get_depths(tree.splitlines())
+
+                # Reformat the Model
+                model = model.replace('{ ','').replace(' }','').split(',  ')
+
+                # Reformat the Bindings
+                if bindings:
+                    bindings = [b for b in bindings if b != '' and b != ' ']
+                    bindings = [b.replace(' equal ',': ') for b in bindings]
+
+                # Create a dictionary for this answer
+                new_answer = {}
+                new_answer['time'] = time
+                new_answer['model'] = model
+                if bindings:
+                    new_answer['bindings'] = bindings
+                new_answer['explanations'] = explanations
+
+                # Add the answer to the output_answers list
+                self.output['answers'].append(new_answer.copy())
+
+# Takes a list of lines from an explanation and returns a list of nested dictionaries of text and children dictionaries.
+def get_depths(lines):
+    output = []
+    for l in lines:
+        # If we get to global constraints, stop.
+        if l.startswith('The global constraints hold'):
+            break
+        # Skip lines that start with 'abducible' holds
+        if l.lstrip(' ').startswith('\'abducible\' holds'):
+            continue
+        this_line = {}
+        depth = (len(l) - len(l.lstrip(' ')))/4
+        this_line['text'] = l.lstrip(' ')
+        # s(CASP) applies periods to some lines that we don't display, so
+        # just get rid of them all.
+        if this_line['text'].endswith('.'):
+            this_line['text'] = this_line['text'].rstrip('.')
+        this_line['depth'] = depth
+        output.append(this_line.copy())
+    return output
+
+
+
+# Docassemble-L4
+#   Depends On:
+#       - docassemble-scasp
+#       - docassemble-datatypes
+#       - LExSIS
+#       - scasp-parse
+#           Provides:
+#               - Ability to get information about scasp files
+#   Provides:
+#       - Ability to generate an interview from an s(CASP) file and a LExSIS file.
+#       - Ability to run that interview using the l4-specific parts, such as excluding
+#         certain defeasibility predicates used in L4 from explanations, etc.
 
 # FOR TESTING ONLY
 #import yaml
@@ -797,14 +930,15 @@ def is_list(input):
     # Otherwise
     return False
 
-class map_object(object):
-    def __init__(self):
+class RelevanceSearch(object):
+    def __init__(self,base_code):
         self.mapped = set()
         self.relevant = set()
-        self.base_code = ""
+        self.base_code = base_code
         self.inputs = []
         self.derived = []
         self.query = ""
+        self.ast = []
 
 def get_initially_relevant(query,base_code):
     print('Starting relevance search.\n')
@@ -816,7 +950,12 @@ def get_initially_relevant(query,base_code):
     # the list of problems it has already solved. So the inner verson of the function
     # passes an object so that the values of the object can be changed inside the
     # recursive function, and those changes will persist after the function returns.
+
+
+
     mapping_object = map_object()
+    # Use the parser to parse the base_code
+    mapping_object.ast = scasp.program.parseString(base_code,True)
     mapping_object.mapped = set()
     mapping_object.relevant = set()
     mapping_object.base_code = base_code
