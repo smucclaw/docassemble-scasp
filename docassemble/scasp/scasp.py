@@ -3,6 +3,7 @@ from pyparsing import *
 import string
 import tempfile
 import subprocess
+import networkx as nx
 
 __all__ = ['parse', 'Reasoner', 'Response', 'Query']
 
@@ -21,8 +22,8 @@ NAF = "not"
 LOGICAL_NEGATION = '-'
 
 base_atom = pp.Word(string.ascii_lowercase + LOGICAL_NEGATION, pp.printables, excludeChars="(),#.:%")("base atom")
-neg_atom = pp.Group(LOGICAL_NEGATION + base_atom)("negative atom")
-atom = base_atom | neg_atom
+neg_atom = pp.Combine(pp.Suppress(LOGICAL_NEGATION) + base_atom)("negative atom")
+atom = neg_atom | base_atom
 named_var = pp.Word(string.ascii_uppercase, pp.printables, excludeChars="(),#.:%")("variable")
 silent_var = pp.Literal("_")('silent variable')
 variable = named_var | silent_var
@@ -238,11 +239,25 @@ class SearchObject():
         self.base_code = code
         self.query = "\n?- " + question + ".\n"
         self.parse = program.parseString(code,True)
+        self.graph = self.build_graph()
         self.predicates = self.get_predicates()
         self.derived = self.get_derived()
         self.inputs = self.get_inputs()
         self.deferred = set()
         
+    def build_graph(self):
+        output = nx.Graph()
+
+        # Search for all generalized statements as a set, and add them as nodes to the graph.
+
+        # Search for all the rules, and in each rule
+            # Collect All The Conditions, and for each condition
+                # Add an edge from the conclusion to the condition in the graph.
+
+
+        # Return the Graph
+        return output
+
     def get_predicates(self):
         return set(self.entity_search(self.parse,'base atom'))
 
@@ -364,14 +379,103 @@ class Response():
             output.append(this_line.copy())
         return output
 
-#mortal = open('docassemble/scasp/data/static/r34.pl','r')
-#code = mortal.read()
-#mortal.close()
+mortal = open('docassemble/scasp/data/static/r34.pl','r')
+code = mortal.read()
+mortal.close()
 #test_reasoner = Reasoner(code)
 #print(test_reasoner.parse.dump())
-
 #response = test_reasoner.ask('mortal(X)')
 #print(response.output['answers'][0]['explanations'])
 #relevant = test_reasoner.get_relevant('mortal(X)')
 
+tg = nx.DiGraph()
+parse = program.parseString(code,True)
+#print(parse.dump())
+
+def entity_search(l,target):
+    results = []
+    if target in l:
+        results.append(l[target])
+    for i in range(len(l)):
+        if isinstance(l[i-1],ParseResults) and target in l[i-1]:
+            results.append(l[i-1][target])
+        if isinstance(l[i-1],ParseResults):
+            child_search = entity_search(l[i-1],target)
+            if len(child_search):
+                results += child_search
+    return results
+    
+def generalize_scasp_term(input_term):
+    if 'variable' in input_term:
+        output = input_term['variable']
+    elif 'silent variable' in input_term:
+        output = "_"
+    elif 'negation as failure' in input_term:
+        output = generalize_scasp_term(input_term['negation as failure'])
+    elif 'term' in input_term:
+        output = generalize_scasp_term(input_term['term'])
+    elif 'functor' in input_term:
+        if 'base atom' in input_term['functor']:
+            output = input_term['functor']['base atom']
+        elif 'negative atom' in input_term['functor']:
+            output = input_term['functor']['negative atom']['base atom']
+        if 'arguments' in input_term:
+            output += "("
+            for a in input_term['arguments']:
+                output += generalize_scasp_term(a)
+                output += ","
+            output += ")"
+    elif 'constraint' in input_term:
+        output = ""    
+    else:
+        raise Exception("Unexpected term type in generalization.")
+    return output.replace(",)",")")
+
+def generalize_scasp_variables(argument):
+    var_index = 0
+    var_dict = {}
+    # Count variables in the reformatted statement
+    variable_pattern = re.compile(r"([A-Z][^\(\)\<\%\,]*)")
+    matches = variable_pattern.findall(argument)
+    # Go through the variables
+    for i in range(len(matches)):
+        if matches[i] in var_dict:
+            replacement = var_dict[matches[i]]
+        else:
+            replacement = string.ascii_uppercase[var_index]
+            var_dict[matches[i]] = replacement
+            var_index = var_index + 1
+    output = argument
+    for k,v in var_dict.items():
+        output = output.replace(k,v)
+    return output
+
+def generalize(argument):
+    return generalize_scasp_variables(generalize_scasp_term(argument))
+
+#print(parse.dump())
+terms = entity_search(parse,'term')
+generalized_terms = set()
+for t in terms:
+    generalized_terms.add(generalize(t))
+tg.add_nodes_from(generalized_terms)
+rules = entity_search(parse,'rule')
+for r in rules:
+    conclusion = generalize(entity_search(r,'conclusion')[0])
+    conditions = entity_search(r,'conditions')[0]
+    for c in conditions:
+        tg.add_edge(conclusion,generalize(c))
+
+#from networkx.drawing.nx_pydot import write_dot
+#write_dot(tg,"test.dot")
+def relevant_to(query):
+ return nx.descendants(tg,generalize(statement.parseString('according_to(r34_4,may(Lawyer,accept,Position))',True)))
+
+
+print(relevant_to('according_to(r34_4,may(Lawyer,accept,Position))'))
+# TODO: Generalizing terms is not working for defeated_by_refutation(A,B,OA,OB).
+# Not sure why.
+# refuted_by(A,B,Third_A,Third_B)
+
+# TODO: Some things are getting turned into blanks in the generalization algorithm.
 
