@@ -20,27 +20,27 @@ EQ_OP = "="
 NAF = "not"
 LOGICAL_NEGATION = '-'
 
-pos_atom = pp.Word(string.ascii_lowercase + LOGICAL_NEGATION, pp.printables, excludeChars="(),#.:%")("positive atom")
-neg_atom = pp.Group(LOGICAL_NEGATION + pp.Word(string.ascii_lowercase, pp.printables, excludeChars="(),#.:%"))("negative atom")
-atom = pos_atom | neg_atom
+base_atom = pp.Word(string.ascii_lowercase + LOGICAL_NEGATION, pp.printables, excludeChars="(),#.:%")("base atom")
+neg_atom = pp.Group(LOGICAL_NEGATION + base_atom)("negative atom")
+atom = base_atom | neg_atom
 named_var = pp.Word(string.ascii_uppercase, pp.printables, excludeChars="(),#.:%")("variable")
 silent_var = pp.Literal("_")('silent variable')
 variable = named_var | silent_var
 symbol = atom ^ variable
-parameter = pp.Forward()
-parameter_list = pp.Suppress(LPAREN) + pp.delimitedList(pp.OneOrMore(pp.Group(parameter)))('parameters') + pp.Suppress(RPAREN)
+argument = pp.Forward()
+argument_list = pp.Suppress(LPAREN) + pp.delimitedList(pp.OneOrMore(pp.Group(argument)))('arguments') + pp.Suppress(RPAREN)
 constraint_op = pp.Literal(DISEQ_OP)('disequality') | pp.Literal(EQ_OP)('equality')
 constraint = pp.Group(pp.Group(symbol)('leftside') + constraint_op('operator') + pp.Group(symbol)('rightside'))('constraint')
 comment = pp.Suppress(COMMENT) + pp.restOfLine('comment')
-pos_statement = pos_atom('positive predicate') ^ pp.Group(pos_atom('positive predicate') + parameter_list)('statement')
-neg_statement = neg_atom('negative predicate') ^ pp.Group(neg_atom('negative predicate') + parameter_list)('statement')
-base_statement = neg_statement | pos_statement
-naf_statement = pp.Group(NAF + base_statement)('negation as failure')
-statement = naf_statement | base_statement | constraint
-parameter <<= statement ^ variable
+term = pp.Group(pp.Group(atom)('functor') + pp.Optional(argument_list))('term')
+naf_term = pp.Group(NAF + term)('negation as failure')
+statement = naf_term | term | constraint
+
+argument <<= statement ^ variable
+
 nlg_dec = pp.Group(pp.Suppress(PRED_DECLARATION) + statement('statement') + pp.Suppress(NLG_ASSIGNMENT) + pp.sglQuotedString('nlg format') + pp.Suppress(PERIOD))('nlg declaration')
 rule = pp.Group(pp.Group(statement)('conclusion') + pp.Suppress(IMPLICATION) + pp.Group(pp.delimitedList(pp.OneOrMore(pp.Group(statement))).ignore(comment))('conditions') + pp.Suppress(PERIOD))('rule')
-fact = statement('fact') + pp.Suppress(PERIOD)
+fact = pp.Group(statement + pp.Suppress(PERIOD))('fact')
 query = pp.Suppress(QUERY_OP) + pp.Group(pp.delimitedList(pp.Group(statement)))('query') + pp.Suppress(PERIOD)
 abducible = pp.Suppress(ABDUC_OP) + statement + pp.Suppress(PERIOD)
 import_statement = pp.Suppress(IMPORT_OP) + pp.sglQuotedString('import') + pp.Suppress(PERIOD)
@@ -192,6 +192,41 @@ class Reasoner():
         if number > 0:
             output += "(" + ','.join(string.ascii_uppercase[0:number]) + ")"
         return output
+    
+    def generalize_scasp_argument(self,argument):
+        if 'variable' in argument:
+            output = argument['variable']
+        if 'term' in argument:
+            output = argument['term']['functor']['base atom']
+            if 'arguments' in argument['term']:
+                output += "("
+                for a in argument['term']['arguments']:
+                    output += self.generalize_scasp_argument(a)
+                    output += ","
+                output += ")"
+        return output.replace(",)",")")
+
+    def generalize_scasp_variables(self,argument):
+        var_index = 0
+        var_dict = {}
+        # Count variables in the reformatted statement
+        variable_pattern = re.compile(r"([A-Z][^\(\)\<\%\,]*)")
+        matches = variable_pattern.findall(argument)
+        # Go through the variables
+        for i in range(len(matches)):
+            if matches[i] in var_dict:
+                replacement = var_dict[matches[i]]
+            else:
+                replacement = string.ascii_uppercase[var_index]
+                var_dict[matches[i]] = replacement
+                var_index = var_index + 1
+        output = argument
+        for k,v in var_dict.items():
+            output = output.replace(k,v)
+        return output
+
+    def generalize(self,argument):
+        return self.generalize_scasp_variables(self.generalize_scasp_argument(argument))
 
 class SearchObject():
     # This class is used internally to track information about an ongoing
@@ -206,10 +241,10 @@ class SearchObject():
         self.predicates = self.get_predicates()
         self.derived = self.get_derived()
         self.inputs = self.get_inputs()
-        self.deffered = set()
+        self.deferred = set()
         
     def get_predicates(self):
-        return set(self.entity_search(self.parse,'positive predicate'))
+        return set(self.entity_search(self.parse,'base atom'))
 
     def get_inputs(self):
         return set([x for x in self.predicates if x not in self.derived])
@@ -329,13 +364,14 @@ class Response():
             output.append(this_line.copy())
         return output
 
+#mortal = open('docassemble/scasp/data/static/r34.pl','r')
+#code = mortal.read()
+#mortal.close()
+#test_reasoner = Reasoner(code)
+#print(test_reasoner.parse.dump())
 
-
-mortal = open('docassemble/scasp/data/static/mortal.pl','r')
-code = mortal.read()
-mortal.close()
-test_reasoner = Reasoner(code)
-print(test_reasoner.parse.dump())
 #response = test_reasoner.ask('mortal(X)')
 #print(response.output['answers'][0]['explanations'])
 #relevant = test_reasoner.get_relevant('mortal(X)')
+
+
