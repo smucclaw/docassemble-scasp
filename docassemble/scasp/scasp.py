@@ -379,18 +379,7 @@ class Response():
             output.append(this_line.copy())
         return output
 
-mortal = open('docassemble/scasp/data/static/r34.pl','r')
-code = mortal.read()
-mortal.close()
-#test_reasoner = Reasoner(code)
-#print(test_reasoner.parse.dump())
-#response = test_reasoner.ask('mortal(X)')
-#print(response.output['answers'][0]['explanations'])
-#relevant = test_reasoner.get_relevant('mortal(X)')
 
-tg = nx.DiGraph()
-parse = program.parseString(code,True)
-#print(parse.dump())
 
 def entity_search(l,target):
     results = []
@@ -426,7 +415,7 @@ def generalize_scasp_term(input_term):
                 output += ","
             output += ")"
     elif 'constraint' in input_term:
-        output = ""    
+        return None
     else:
         raise Exception("Unexpected term type in generalization.")
     return output.replace(",)",")")
@@ -447,35 +436,82 @@ def generalize_scasp_variables(argument):
             var_index = var_index + 1
     output = argument
     for k,v in var_dict.items():
-        output = output.replace(k,v)
+        output = output.replace("(" + k + ")","(" + v + ")")
+        output = output.replace("," + k + ")","," + v + ")")
+        output = output.replace("(" + k + ",","(" + v + ",")
+        output = output.replace("," + k + ",","," + v + ",")
     return output
 
 def generalize(argument):
-    return generalize_scasp_variables(generalize_scasp_term(argument))
-
-#print(parse.dump())
-terms = entity_search(parse,'term')
-generalized_terms = set()
-for t in terms:
-    generalized_terms.add(generalize(t))
-tg.add_nodes_from(generalized_terms)
-rules = entity_search(parse,'rule')
-for r in rules:
-    conclusion = generalize(entity_search(r,'conclusion')[0])
-    conditions = entity_search(r,'conditions')[0]
-    for c in conditions:
-        tg.add_edge(conclusion,generalize(c))
-
-#from networkx.drawing.nx_pydot import write_dot
-#write_dot(tg,"test.dot")
-def relevant_to(query):
- return nx.descendants(tg,generalize(statement.parseString('according_to(r34_4,may(Lawyer,accept,Position))',True)))
+    term = generalize_scasp_term(argument)
+    if term:
+        return generalize_scasp_variables(term)
+    else:
+        return None
 
 
-print(relevant_to('according_to(r34_4,may(Lawyer,accept,Position))'))
-# TODO: Generalizing terms is not working for defeated_by_refutation(A,B,OA,OB).
-# Not sure why.
-# refuted_by(A,B,Third_A,Third_B)
+def relevant_to(dg,query):
+ relevant = nx.descendants(dg,generalize(term.parseString(query,True)))
+ leaves = set()
+ for r in relevant:
+     if not nx.descendants(dg,r):
+         leaves.add(r)
+ return leaves
 
-# TODO: Some things are getting turned into blanks in the generalization algorithm.
 
+def build_graph(parse):
+    dg = nx.DiGraph()
+    # Add all of the rules that conclude anything and their conclusions as nodes,
+    # with an edge from the conclusion to the rule.
+    rules = entity_search(parse,'rule')
+    for r in rules:
+        conclusion = r['conclusion'][0]
+        if conclusion['functor']['base atom'] not in ['opposes','compromised','disqualified','defeated_by_closure','legally_holds','defeated','rebutted_by','refuted_by','unsafe_rebutted_by','defeated_by_rebuttal','defeated_by_refutation','defeated_by_disqualification']:
+            if conclusion['functor']['base atom'] == 'according_to':
+                conclusion_node = generalize(conclusion['arguments'][1][0])
+                rule_node = conclusion['arguments'][0][0]['functor']['base atom']
+                condition_target = rule_node
+                dg.add_node(rule_node)
+                dg.add_node(conclusion_node)
+                dg.add_edge(conclusion_node,rule_node)
+            else:
+                conclusion_node = generalize(conclusion)
+                condition_target = conclusion_node
+                dg.add_node(conclusion_node)
+
+            # Add conditions and edges to the condition target.
+            conditions = entity_search(r,'conditions')[0]
+            for c in conditions:
+                    if generalize(c):
+                        if 'term' in c:
+                            target = c
+                        elif 'negation as failure' in c:
+                            target = c['negation as failure']
+                        if target['term']['functor']['base atom'] == 'according_to':
+                            dg.add_node(generalize(c['term']['arguments'][1]))
+                            dg.add_edge(condition_target,generalize(c['term']['arguments'][1]))
+                        else:
+                            dg.add_node(generalize(c))
+                            dg.add_edge(condition_target,generalize(c))
+                
+
+    # Add all the defeating relationships as edges.
+    facts = entity_search(parse,'fact')
+    for f in facts:
+        if 'base atom' in f['term']['functor']:
+            if f['term']['functor']['base atom'] == 'overrides':
+                if 'term' in f['term']['arguments'][0] and 'term' in f['term']['arguments'][2]:        
+                    dg.add_edge(f['term']['arguments'][2]['term']['functor']['base atom'],f['term']['arguments'][0]['term']['functor']['base atom'])
+    dg.graph['graph']={'rankdir':'LR'}
+    return dg
+
+
+source = open('docassemble/scasp/data/static/r34.pl','r')
+code = source.read()
+source.close()
+parse = program.parseString(code,True)
+graph = build_graph(parse)
+from networkx.drawing.nx_pydot import write_dot
+write_dot(graph,"defeasible.dot")
+
+print(relevant_to(graph,'business_entity(X)'))
