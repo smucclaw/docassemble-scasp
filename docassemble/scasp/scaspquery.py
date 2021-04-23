@@ -10,6 +10,7 @@
 import subprocess
 import re
 import urllib.parse
+no_docassemble = False
 try:
     from docassemble.base.functions import get_config
 except ModuleNotFoundError:
