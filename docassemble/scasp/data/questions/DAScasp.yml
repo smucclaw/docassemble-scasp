@@ -1,5 +1,5 @@
 modules:
-  - .DAScasp
+  - .scaspquery
 ---
 objects:
   - database: DAFile.using(filename='temp_dascasp_db.txt')
