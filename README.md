@@ -11,6 +11,9 @@ Inside the docassemble server, [install the package from its github repository](
 
 You must also have s(CASP) installed on your docassemble container. Instructions for installing s(CASP) are [avaialble here](https://gitlab.software.imdea.org/ciao-lang/sCASP).
 
+(Or, do it the easy way, and install an image of docassemble with s(CASP) and this module
+already installed, [available here](https://github.com/smucclaw/l4-docassemble))
+
 ## Configuration
 
 In the docassemble global configuration, add the following lines:
