@@ -11,6 +11,10 @@ features:
 ---
 template: DAScasp_show_answers
 content: |
+
+  For Debugging:
+  <pre>${database.slurp()}</pre>
+
   You asked:
   **${ answer['query'] }**
   
