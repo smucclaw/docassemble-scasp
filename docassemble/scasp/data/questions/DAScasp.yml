@@ -18,17 +18,30 @@ content: |
   **${ answer['result'] }**
   
   % if answer['result'] == 'Yes':
+  There
+  % if len(answer['answers']) == 1:
+  is 1 answer.
+  % else:
+  are ${ len(answer['answers'])} answers.
+  % endif
+
   % for a in answer['answers']:
-  #### Scenario
+  #### Scenario ${ loop.index+1 }
   %if 'bindings' in a:
   % for b in a['bindings']:
   * ${ b }
   % endfor
   % endif
   
+  % if len(a['models']) == 1:
+  There is 1 explanation for this answer:
+  % else:
+  There are ${ len(a['models'])} explanations for this answer:
+  % endif
+
   % for e in a['models']:
   
-  ##### Why? (click to expand)
+  ##### Explanation ${ loop.index+1 }
   ${ e['explanations'] }
   
   % if show_models:
