@@ -89,13 +89,19 @@ def sendQuery(filename, number=0):
             output['answers'].append(new_answer.copy())
         
         # Reorganize the tree so that bindings are a level above models and explanations.
-        all_bindings = [x['bindings'] for x in output['answers']]
-        unique_answers = set(all_bindings)
+        all_bindings = [x['bindings'] for x in output['answers'] if x['bindings'] not in all_bindings]
+        
         new_output = []
         new_output['query'] = output['query']
         new_output['result'] = output['result']
-        for u in unique_answers:
-            new_output['answers'] += {'bindings': u, 'models': {}}
+        new_output['answers'] = []
+        for a in output['answers']:
+            present = False
+            for na in new_output['answers']:
+                if a['bindings'].sort() == na['bindings'].sort():
+                    present = True
+            if not present:
+                new_output['answers'] += {'bindings': a['bindings'], 'models': {}}
         for a in output['answers']:
             for na in new_output['answers']:
                 if a['bindings'] == na['bindings']:
