@@ -26,7 +26,7 @@ content: |
   % endfor
   % endif
   
-  % for e in answer['models']:
+  % for e in a['models']:
   
   ##### Why? (click to expand)
   ${ e['explanations'] }
