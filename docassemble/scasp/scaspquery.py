@@ -89,7 +89,8 @@ def sendQuery(filename, number=0):
             output['answers'].append(new_answer.copy())
         
         # Reorganize the tree so that bindings are a level above models and explanations.
-        unique_answers = set([x['bindings'] for x in output['answers']])
+        all_bindings = [x['bindings'] for x in output['answers']]
+        unique_answers = set(all_bindings)
         new_output = []
         new_output['query'] = output['query']
         new_output['result'] = output['result']
