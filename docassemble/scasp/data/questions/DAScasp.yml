@@ -18,22 +18,24 @@ content: |
   **${ answer['result'] }**
   
   % if answer['result'] == 'Yes':
-  % for model in answer['answers']:
+  % for a in answer['answers']:
   #### Scenario
   %if 'bindings' in model:
-  % for b in model['bindings']:
+  % for b in a['bindings']:
   * ${ b }
   % endfor
   % endif
   
+  % for e in answer['models']:
   
   ##### Why? (click to expand)
-  ${ model['explanations'] }
+  ${ e['explanations'] }
   
   % if show_models:
   ##### Formal Model
-  `${ model['model'] }`
+  `${ e['model'] }`
   % endif
+  % endfor
 
   % endfor
   % endif
