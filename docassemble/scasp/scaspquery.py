@@ -100,7 +100,7 @@ def sendQuery(filename, number=0):
                 if a['bindings'].sort() == na['bindings'].sort():
                     present = True
             if not present:
-                new_output['answers'] += {'bindings': a['bindings'], 'models': {}}
+                new_output['answers'].append({'bindings': a['bindings'], 'models': {}})
         for a in output['answers']:
             for na in new_output['answers']:
                 if a['bindings'] == na['bindings']:
