@@ -44,7 +44,7 @@ def sendQuery(filename, number=0):
         answers = results.split("\tANSWER:\t")
         query = answers[0]
         del answers[0]
-        query = query.replace('\n','').replace('     ',' ').replace('QUERY:','')
+        query = query.replace('\n','').replace('     ',' ').replace('QUERY:','').replace('% ','')
         output['query'] = query
         output['result'] = 'Yes'
         output['answers'] = []
