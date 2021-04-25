@@ -104,9 +104,10 @@ def sendQuery(filename, number=0):
         for a in output['answers']:
             for na in new_output['answers']:
                 if a['bindings'] == na['bindings']:
-                    na['models']['time'] = a['time']
-                    na['models']['model'] = a['model']
-                    na['models']['explanations'] = a['explanations']
+                    na['models'] += {'time': a['time'], 'model': a['model'], 'explanations': a['explanations']}
+                    # na['models']['time'] = a['time']
+                    # na['models']['model'] = a['model']
+                    # na['models']['explanations'] = a['explanations']
         
         return new_output
 
