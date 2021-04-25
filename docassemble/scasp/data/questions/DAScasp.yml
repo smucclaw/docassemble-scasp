@@ -20,7 +20,7 @@ content: |
   % if answer['result'] == 'Yes':
   % for a in answer['answers']:
   #### Scenario
-  %if 'bindings' in model:
+  %if 'bindings' in a:
   % for b in a['bindings']:
   * ${ b }
   % endfor
