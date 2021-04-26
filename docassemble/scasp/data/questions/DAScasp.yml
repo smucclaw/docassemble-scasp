@@ -27,11 +27,6 @@ content: |
 
   % for a in answer['answers']:
   #### Answer ${ loop.index+1 }: ${ capitalize(a['nlg_answer']) }
-  %if 'bindings' in a:
-  % for b in a['bindings']:
-  * ${ b }
-  % endfor
-  % endif
   
   % if len(a['models']) == 1:
   There is 1 explanation for this answer:
