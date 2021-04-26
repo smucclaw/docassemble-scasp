@@ -33,7 +33,7 @@ content: |
   % endfor
   % endif
   
-  ${ answer['nlg_answer'] }
+  ${ a['nlg_answer'] }
   
   % if len(a['models']) == 1:
   There is 1 explanation for this answer:
