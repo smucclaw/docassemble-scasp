@@ -1,15 +1,29 @@
-# A simple interface to the s(CASP) constraint answer set programming
-# tool from inside a Docassemble interview.
+# This script takes the name of an operating system file that is an s(CASP)
+# program and includes a query, sends that query to the s(CASP) reasoner,
+# and then returns a result that is designed to be displayed inside
+# a docassemble interview.
+
+# Because it returns docassemble-specific content, and because it gets the
+# name of the location of the scasp reasoner from the docassemble configuration
+# it belongs in docassemble-scasp
 
 import subprocess
-import urllib.parse
 import re
-from docassemble.base.functions import get_config
+import urllib.parse
+no_docassemble = False
+try:
+    from docassemble.base.functions import get_config
+except ModuleNotFoundError:
+    no_docassemble = True
 
-# Send an s(CASP) file to the reasoner and return the results.
+
+# Send an s(CASP) file to the scasp reasoner and return the results.
 def sendQuery(filename, number=0):
     number_flag = "-s" + str(number)
-    scasp_location = get_config('scasp')['location'] if (get_config('scasp') and get_config('scasp')['location']) else '/var/www/.ciao/build/bin/scasp'
+    if no_docassemble:
+        scasp_location = "scasp"
+    else:
+        scasp_location = get_config('scasp')['location'] if (get_config('scasp') and get_config('scasp')['location']) else '/var/www/.ciao/build/bin/scasp'
     results = subprocess.run([scasp_location, '--human', '--tree', number_flag, filename], capture_output=True).stdout.decode('utf-8')
     
     pattern = re.compile(r"daSCASP_([^),\s]*)")
@@ -30,7 +44,7 @@ def sendQuery(filename, number=0):
         answers = results.split("\tANSWER:\t")
         query = answers[0]
         del answers[0]
-        query = query.replace('\n','').replace('     ',' ').replace('QUERY:','')
+        query = query.replace('\n','').replace('     ',' ').replace('QUERY:','').replace('% ','')
         output['query'] = query
         output['result'] = 'Yes'
         output['answers'] = []
@@ -74,15 +88,36 @@ def sendQuery(filename, number=0):
             # Add the answer to the output_answers list
             output['answers'].append(new_answer.copy())
         
-        # Now add the output answers to the result
-        return output
-
-def unencode(string):
-    # For every string starting with daSCASP_ until space or punctuation
-    # remove the daSCASP, replace each instance of __perc__ with a % sign,
-    # then urllib.parse.unquote_plus() it to get back the orignal content.
-
-    pass
+        # Reorganize the tree so that bindings are a level above models and explanations.
+        
+        new_output = {}
+        new_output['query'] = output['query']
+        new_output['result'] = output['result']
+        new_output['answers'] = []
+        for a in output['answers']:
+            present = False
+            for na in new_output['answers']:
+                if a['bindings'].sort() == na['bindings'].sort():
+                    present = True
+            if not present:
+                new_output['answers'].append({'bindings': a['bindings'], 'models': []})
+        for a in output['answers']:
+            for na in new_output['answers']:
+                if a['bindings'] == na['bindings']:
+                    na['models'].append({'time': a['time'], 'model': a['model'], 'explanations': a['explanations']})
+                    # na['models']['time'] = a['time']
+                    # na['models']['model'] = a['model']
+                    # na['models']['explanations'] = a['explanations']
+        
+        for i in range(len(new_output['answers'])):
+            nlg_answer = new_output['query']
+            nlg_answer = nlg_answer.replace('I would like to know if ','')
+            for b in new_output['answers'][i]['bindings']:
+                splitbinding = b.split(': ')
+                nlg_answer = nlg_answer.replace(splitbinding[0],splitbinding[1])
+            new_output['answers'][i]['nlg_answer'] = nlg_answer
+        
+        return new_output
 
 def get_depths(lines):
     output = []

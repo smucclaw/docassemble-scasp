@@ -1,5 +1,5 @@
 modules:
-  - .DAScasp
+  - .scaspquery
 ---
 objects:
   - database: DAFile.using(filename='temp_dascasp_db.txt')
@@ -18,22 +18,32 @@ content: |
   **${ answer['result'] }**
   
   % if answer['result'] == 'Yes':
-  % for model in answer['answers']:
-  #### Scenario
-  %if 'bindings' in model:
-  % for b in model['bindings']:
-  * ${ b }
-  % endfor
+  There
+  % if len(answer['answers']) == 1:
+  is 1 answer.
+  % else:
+  are ${ len(answer['answers'])} answers.
   % endif
+
+  % for a in answer['answers']:
+  #### Answer ${ loop.index+1 }: ${ capitalize(a['nlg_answer']) }
   
+  % if len(a['models']) == 1:
+  There is 1 explanation for this answer:
+  % else:
+  There are ${ len(a['models'])} explanations for this answer:
+  % endif
+
+  % for e in a['models']:
   
-  ##### Why? (click to expand)
-  ${ model['explanations'] }
+  ##### Explanation ${ loop.index+1 }
+  ${ e['explanations'] }
   
   % if show_models:
   ##### Formal Model
-  `${ model['model'] }`
+  `${ e['model'] }`
   % endif
+  % endfor
 
   % endfor
   % endif
@@ -47,4 +57,3 @@ code: |
   answer = sendQuery(database.path(), scasp_number)
   if not defined('show_models'):
     show_models = False
----

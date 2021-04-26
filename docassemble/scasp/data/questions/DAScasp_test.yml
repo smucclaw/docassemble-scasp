@@ -11,7 +11,7 @@ code: |
 mandatory: True
 question: s(CASP) Test
 subquestion: |
-  If s(CASP) and the DAScasp package is properly installed, you should see an explanation below for
+  If s(CASP) and the docassemble-scasp package is properly installed, you should see an explanation below for
   why Socrates is Mortal.
   
   ${ DAScasp_show_answers }
