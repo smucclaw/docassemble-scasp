@@ -113,7 +113,7 @@ def sendQuery(filename, number=0):
             nlg_answer = new_output['query']
             nlg_answer = nlg_answer.replace('I would like to know if ','')
             for b in new_output['answers'][i]['bindings']:
-                splitbinding = b.split(' : ')
+                splitbinding = b.split(': ')
                 nlg_answer = nlg_answer.replace(splitbinding[0],splitbinding[1])
             new_output['answers'][i]['nlg_answer'] = nlg_answer
         
