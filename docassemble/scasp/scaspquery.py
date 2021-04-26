@@ -109,7 +109,7 @@ def sendQuery(filename, number=0):
                     # na['models']['model'] = a['model']
                     # na['models']['explanations'] = a['explanations']
         
-        for i in range(len(new_output['answers']):
+        for i in range(len(new_output['answers'])):
             nlg_answer = new_output['query']
             nlg_answer = nlg_answer.replace('I would like to know if ','')
             for b in new_output['answers'][i]['bindings']:
