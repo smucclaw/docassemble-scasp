@@ -26,7 +26,7 @@ content: |
   % endif
 
   % for a in answer['answers']:
-  #### Scenario ${ loop.index+1 }: ${ capitalize(a['nlg_answer']) }
+  #### Answer ${ loop.index+1 }: ${ capitalize(a['nlg_answer']) }
   %if 'bindings' in a:
   % for b in a['bindings']:
   * ${ b }
