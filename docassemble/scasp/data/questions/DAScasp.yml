@@ -65,7 +65,7 @@ code: |
   if not defined('show_models'):
     show_models = False
   for answer in answer['answers']:
-    query = answer['query']
+    query = answers['query']
     query = query.replace('I would like to know if ','')
     for b in answer['bindings']:
       splitbinding = b.split(' : ')
