@@ -152,9 +152,11 @@ def display_list(input,depth=0):
         #print("<ul id=\"explanation\" class=\"active\">")
         output = "<ul id=\"explanation\" class=\"active\">"
     else:
+
         #print("<ul class=\"nested\">")
         output = "<ul class=\"nested\">"
     #print("Setting the number of lines to skip to zero.")
+
     skip = 0
     #print("Going through the lines.")
     for i in range(len(input)):
@@ -164,7 +166,7 @@ def display_list(input,depth=0):
             skip = skip-1
             #print("Skips remaining: " + str(skip) + ".")
             continue
-        
+
         if input[i]['depth'] == depth:
             #print("This line is at the right depth, adding it.")
             if input[i]['text'].endswith('because'):
@@ -178,11 +180,14 @@ def display_list(input,depth=0):
             #print(input[i]['text'])
             output += input[i]['text']
             if input[i]['text'].endswith('because'):
+
                 #print("</span></li>")
+
                 output += "</span></li>"
             else:
                 #print("</li>")
                 output += "</li>"
+
         if input[i]['depth'] > depth:
             #print("This line is deeper.")
             sub_output = display_list(input[i:],input[i]['depth'])
