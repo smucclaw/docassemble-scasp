@@ -35,7 +35,7 @@ def sendQuery(filename, number=0):
 
     # If result is no models
     if results.endswith('no models\n\n'):
-        query = results.replace('\n\nno models\n\n','').replace('\n    ','').replace('QUERY:','').replace('{','').replace('}','')
+        query = results.replace('\n\nno models\n\n','').replace('\n    ','').replace('QUERY:','').replace('{','').replace('}','').replace('% ','')
         output['query'] = query
         output['result'] = 'No'
         return output
@@ -44,7 +44,7 @@ def sendQuery(filename, number=0):
         answers = results.split("\tANSWER:\t")
         query = answers[0]
         del answers[0]
-        query = query.replace('\n','').replace('     ',' ').replace('QUERY:','').replace('% ','')
+        query = query.replace('\n','').replace('     ',' ').replace('QUERY:','').replace('% ','').replace('{','').replace('}','')
         output['query'] = query
         output['result'] = 'Yes'
         output['answers'] = []
