@@ -6,7 +6,7 @@
 % #pred according_to(R,flies(X)) :: 'according to rule @(R), @(X) flies'.
 #pred rule(R) :: '@(R) is a rule'.
 #pred conclusion(C) :: '@(C) is a conclusion'.
-#pred according_to(R,C) :: 'according to rule @(R), the conclusion @(C) holds'.
+%#pred according_to(R,C) :: 'according to rule @(R), the conclusion @(C) holds'.
 #pred overrides(R1,C1,R2,C2) :: 'the conclusion @(C1) from rule @(R1) overrides the conclusion @(C2) from rule @(R2)'.
 #pred opposes(R1,C1,R2,C2) :: 'the conclusion @(C1) from rule @(R1) conflicts with the conclusion @(C2) from rule @(R2)'.
 
@@ -77,7 +77,7 @@ disqualified(Rule,Conclusion) :-
 
 % A rule is defeated if it is refuted or rebutted by a rule that is not compromised, or if it is disqualified.
 % (A rebutting rule is already not compromsied, the requirement of non-compromise does not apply to refutation)
-#pred defeated(Rule,Conclusion) :: 'the conclusion @(Conclusion) from rule @(Rule) is defeated'.
+%#pred defeated(Rule,Conclusion) :: 'the conclusion @(Conclusion) from rule @(Rule) is defeated'.
 #pred defeated_by_disqualification(R1,C1,R2,C2) :: 'the conclusion @(C1) from rule @(R1) is defeated by disqualification by the conclusion @(C2) from rule @(R2)'.
 #pred defeated_by_rebuttal(R,C,OR,OC) :: 'the conclusion @(C) from rule @(R) is defeated by rebuttal by the conclusion @(OC) from rule @(R)'.
 #pred defeated_by_refutation(R,C,OR,OC) :: 'the conclusion @(C) from rule @(R) is defeated by refutation by the conclusion @(OC) from rule @(R)'.
@@ -111,100 +111,37 @@ defeated(R,C) :-
     defeated_by_refutation(R,C,OR,OC).
 
 % a conclusion holds if it is found and not defeated.
-#pred legally_holds(R,C) :: 'the conclusion @(C) from rule @(R) ultimately holds'.
+%#pred legally_holds(R,C) :: 'the conclusion @(C) from rule @(R) ultimately holds'.
 legally_holds(R,C) :-
     not defeated(R,C),
     according_to(R,C).
 
-% Abducibility Statements for Testing
-%#abducible legally_holds(R,C).
-%#abducible defeated(Rule,Conclusion).
-%#abducible defeated_by_disqualification(R1,C1,R2,C2).
-%#abducible defeated_by_rebuttal(R,C,OR,OC).
-%#abducible defeated_by_refutation(R,C,OR,OC).
-%#abducible disqualified(Rule,Conclusion).
-%#abducible defeated_by_closure(R1,C1,R2,C2).
-%#abducible compromised(Rule,Conclusion).
-%#abducible refuted_by(R1,C1,R2,C2).
-%#abducible rebutted_by(R1,C1,R2,C2).
-
-% You should only need the following for testing purposes
-%#abducible rule(X).
-%#abducible conclusion(C).
-%#abducible according_to(R,C).
-%#abducible overrides(R1,C1,R2,C2).
-%#abducible opposes(R1,C1,R2,C2).
 
 
-% s(CASP) is not good at testing against things that there needs to be more
-% than one of for it to work. So I'm going to create a handful of rules and
-% conclusions, and hopeuflly that will make some of the tests work better.
-
-%#abducible rule(rule1).
-%#abducible rule(rule2).
-%#abducible rule(rule3).
-%#abducible rule(rule4).
-%#abducible conclusion(conclusion1).
-%#abducible conclusion(conclusion2).
-%#abducible conclusion(conclusion3).
-%#abducible conclusion(conclusion4).
-%#abducible according_to(rule1,conclusion1).
-%#abducible according_to(rule2,conclusion2).
-%#abducible according_to(rule3,conclusion3).
-%#abducible according_to(rule4,conclusion4).
-
-%?- legally_holds(R,C).
-% 4 models with 4 rules
-
-%?- not defeated(Rule,Conclusion).
-% 46 Models with 4 rules.
-
-%?- defeated_by_disqualification(R1,C1,R2,C2).
-% >100 models with 4 rules.
-
-%?- defeated_by_rebuttal(R,C,OR,OC).
-% NO models with 4 rules.
-
-%?- defeated_by_refutation(R,C,OR,OC).
-% 24 models with 4 rules. (4!)
-
-%?- disqualified(Rule,Conclusion).
-% > 100 models with 4 rules.
-
-%?- defeated_by_closure(R1,C1,R2,C2).
-% > 100 models with 4 rules.
-
-%?- compromised(Rule,Conclusion).
-% 24 models with 4 rules. (4!)
-
-%?- refuted_by(R1,C1,R2,C2).
-% 24 models with 4 rules. (4!)
-
-%?- rebutted_by(R1,C1,R2,C2).
-% 24 models with 4 rules (4!) (way faster)
 
 
-#pred legally_holds(Rule,may(Y,accept,Z)) :: 'it holds in accordance with @(Rule) that @(Y) is permitted to accept @(Z)'.
-#pred legally_holds(Rule,must_not(Y,accept,Z)) :: 'it holds in accordance with @(Rule) that @(Y) is prohibited from accepting @(Z)'.
+#pred legally_holds(Rule,may(Y,accept,Z)) :: 'it holds in accordance with {@(Rule)} that @(Y) is permitted to accept @(Z)'.
+#pred legally_holds(Rule,must_not(Y,accept,Z)) :: 'it holds in accordance with {@(Rule)} that @(Y) is prohibited from accepting @(Z)'.
+#pred defeated(Rule,may(Y,accept,Z)) :: 'the conclusion that @(Y) may accept @(Z) from rule {@(Rule)} is defeated'.
+#pred defeated(Rule,must_not(Y,accept,Z)) :: 'the conclusion that @(Y) must not accept @(Z) from rule {@(Rule)} is defeated'.
 
 % PREDICATE DEFINITIONS
 #pred accepts_position_as_representative(A,B,C) :: '@(A) accepts the position @(B) as a representative of @(C)'.
-#pred according_to(X,described_in_s1(Y)) :: 'according to @(X), @(Y) is described in section 1'.
-#pred according_to(X,may(Y,accept,Z)) :: 'in accordance with @(X), @(Y) is permitted to accept @(Z)'.
-#pred according_to(X,must_not(Y,accept,Z)) :: 'in accordance with @(X), @(Y) is prohibited from accepting @(Z)'.
+#pred according_to(X,described_in_s1(Y)) :: 'according to {@(X)}, @(Y) is described in section 1'.
+#pred according_to(X,may(Y,accept,Z)) :: 'in accordance with {@(X)}, @(Y) is permitted to accept @(Z)'.
+#pred according_to(X,must_not(Y,accept,Z)) :: 'in accordance with {@(X)}, @(Y) is prohibited from accepting @(Z)'.
 #pred as_compensation_for(A,B) :: '@(A) is provided as compensation in respect of @(B)'.
 #pred associated_with(A,B) :: '@(A) is associated with @(B)'.
 #pred beneficial_owner_of(X,Y) :: '@(X) is a beneficial owner of @(Y)'.
-#pred -business_entity(X) :: 'as per 34(7)(b), @(X) is not a business entity for the purposes of section 34'.
-#pred business_entity(X) :: 'as per 34(7)(a) @(X) is a business entity for the purposes of section 34'.
+#pred business_entity(X) :: 'in accordance with the {business entity|r34(9) definition of business entity}, @(X) is a business entity'.
 #pred business_trust(X) :: '@(X) is a business trust'.
-#pred business(X) :: '@(X) is a business for the purposes of section 34'.
+#pred business(X) :: ' in accordance with the {business|r34(9) definition of business}, @(X) is a business'.
 #pred calling(X) :: '@(X) is a calling'.
 #pred carries_on(X,Y) :: '@(X) carries on @(Y)'.
 #pred company(X) :: '@(X) is a company'.
 #pred conditions_of_second_schedule_satisfied :: 'the conditions of the second schedule are satisfied'.
 #pred corporation(X) :: '@(X) is a corporation'.
-#pred defeated(X,Y) :: 'the conclusion from @(X) of @(Y) is defeated'.
+%#pred defeated(X,Y) :: 'the conclusion from @(X) of @(Y) is defeated'.
 #pred derogates_from_dignity_of_legal_profession(X) :: '@(X) derogates from the dignity of the legal profession'.
 #pred described_in_first_schedule(X) :: '@(X) is set out in the first schedule'.
 #pred described_in_s1(B) :: '@(B) is a business described in 34(1)'.
@@ -212,7 +149,7 @@ legally_holds(R,C) :-
 #pred director_of(X,Y) :: '@(X) is a director of @(Y)'.
 #pred entitles_holder(X) :: '@(X) entitles the holder to perform executive functions'.
 #pred -executive_appointment(X) :: '@(X) is not an executive appointment for the purposes of section 34'.
-#pred executive_appointment(X) :: '@(X) is an executive appointment for the purposes of section 34'.
+#pred executive_appointment(X) :: 'in accordance with the {executive appointment|r34(9) definition of executive appointment}, @(X) is an executive appointment'.
 #pred executive_appointment_associated_with_a_business(X,Y) :: '@(X) is an executive appointment associated with the business @(Y)'.
 #pred executive_appointment_in_a_business_entity(X,Y) :: '@(X) is an executive appointment in the business entity @(Y)'.
 #pred executive_appointment_in_a_law_practice(X,Y) :: '@(X) is an executive appointment in the law practice @(Y)'.
@@ -232,7 +169,7 @@ legally_holds(R,C) :-
 #pred jurisdiction(X,Y) :: '@(X) is located in @(Y)'.
 #pred law_practice_in_singapore(X) :: '@(X) is a singapore law practice'.
 #pred law_practice(X) :: '@(X) is a law practice'.
-#pred law_related_service(X) :: '@(X) is a law-related service for the purposes of section 34'.
+#pred law_related_service(X) :: '@(X) is a law-related service'.
 #pred legal_owner_of(X,Y) :: '@(X) is a legal owner of @(Y)'.
 #pred legal_practitioner(X) :: '@(X) is a legal practitioner'.
 #pred legal_service(X) :: '@(X) is a legal service'.
@@ -254,7 +191,7 @@ legally_holds(R,C) :-
 #pred performed_by(A,B) :: '@(A) was performed by @(B)'.
 #pred position(X) :: '@(X) is a position'.
 #pred primary_occupation_of(X,Y) :: '@(Y) is the primary occupation of @(X)'.
-#pred prohibited_business(X) :: '@(X) is a business which is prohibited as defined by section 34(1)(f)'.
+#pred prohibited_business(X) :: '@(X) is a prohibited business'.
 #pred provides_legal_or_law_related_services(X) :: '@(X) provides legal or law-related services'.
 #pred provides(A,B) :: '@(A) provides @(B)'.
 #pred service(X) :: '@(X) is a service'.
@@ -573,155 +510,3 @@ executive_appointment(X) :- executive_appointment_in_a_law_practice(X,Y).
 executive_appointment_associated_with_a_business(X,Y) :- position(X), entitles_holder(X), associated_with(X,Y), business(Y), not non_executive_director(X), not independent_director(X).
 executive_appointment_in_a_business_entity(X,Y) :- position(X), entitles_holder(X), in(X,Y), business_entity(Y), not non_executive_director(X), not independent_director(X).
 executive_appointment_in_a_law_practice(X,Y) :- position(X), entitles_holder(X), in(X,Y), law_practice(Y), jurisdiction(Y,singapore), not non_executive_director(X), not independent_director(X).
-
-% ABDUCIBILITY STATEMENTS
-%#abducible accepts_position_as_representative(A,B,C).
-%#abducible as_compensation_for(A,B).
-%#abducible associated_with(A,B).
-%#abducible beneficial_owner_of(X,Y).
-%#abducible business_trust(X).
-%#abducible calling(X).
-%#abducible carries_on(X,Y).
-%#abducible company(X).
-%#abducible conditions_of_second_schedule_satisfied.
-%#abducible corporation(X).
-%#abducible derogates_from_dignity_of_legal_profession(X).
-%#abducible described_in_first_schedule(X).
-%#abducible detracts_from_dignity_of_legal_profession(X).
-%#abducible director_of(X,Y).
-%#abducible entitles_holder(X).
-%#abducible for_profit(X).
-%#abducible foreign_law_practice(X).
-%#abducible formal_law_alliance(X).
-%#abducible in_fourth_schedule(X).
-%#abducible in_third_schedule(X).
-%#abducible in(X,Y).
-%#abducible incompatible_dignity_of_legal_profession(X).
-%#abducible independent_director(X).
-%#abducible institution(X).
-%#abducible involves_paying_commission(X,Y,Z).
-%#abducible involves_sharing_fees(X,Y,Z).
-%#abducible joint_law_venture(X).
-%#abducible jurisdiction(X,Y).
-%#abducible law_practice(X).
-%#abducible law_related_service(X).
-%#abducible legal_owner_of(X,Y).
-%#abducible legal_practitioner(X).
-%#abducible legal_service(X).
-%#abducible legal_work(X).
-%#abducible llp(X).
-%#abducible locum_solicitor(X).
-%#abducible materially_interferes_with(X,Y,Z).
-%#abducible member_of(X,Y).
-%#abducible non_executive_director(X).
-%#abducible owner_of(X,Y).
-%#abducible participation_prohibited(X,Y).
-%#abducible partner_of(X,Y).
-%#abducible partner_sp_or_director_of(X,Y).
-%#abducible partnership(X).
-%#abducible performed_by(A,B).
-%#abducible position(X).
-%#abducible primary_occupation_of(X,Y).
-%#abducible prohibited_business(X).
-%#abducible provides(A,B).
-%#abducible service(X).
-%#abducible sole_proprietor_of(X,Y).
-%#abducible soleprop(X).
-%#abducible third_schedule_institution(X).
-%#abducible trade(X).
-%#abducible unauthorized(X).
-%#abducible unfair(X).
-
-
-%% TEST QUERIES
-%?- business(X).                                            
-% Working, 2 models, trade/calling
-
-%?- law_practice_in_singapore(X).
-% Working, 1 model.
-
-%?- business_entity(X).                                     
-% Working, 28 models, 7 categories * 2 business * 2 not legal pracitce in singapore (not lp, not sg)
-
-%?- executive_appointment(X).                               
-% Working, 31 models, expecting 17 models (1 law practice, + 2 business + 28 business entity)
-
-%?- according_to(r34_7,may(A,accept,B)).                    
-% Working, 1 model
-
-%?- according_to(r34_6_b,must_not(LP,accept,EA)).           
-% Working, 28 models.
-
-%?- provides_legal_or_law_related_services(BE).              
-% Working, 2 models.
-
-%?- according_to(r34_5,may(LP,accept,EA)).                   
-% Working, 28 models.
-
-%?- executive_appointment_associated_with_a_business(X,Y).     
-% Working, 2 models (business)
-
-%?- executive_appointment_in_a_business_entity(X,Y).           
-% Working, 28 models
-
-%?- executive_appointment_in_a_law_practice(X,Y).              
-% Working, 1 model.
-
-%?- according_to(r34_4,may(LP,accept,EA)).                   
-% Working, 28 models
-
-%?- according_to(r34_3,may(LP,accept,EA)).                   
-% Working, 28 models
-
-%?- according_to(r34_1_f,described_in_s1(X)).        
-% Working, 1 model.
-
-%?- according_to(r34_1_e,described_in_s1(X)).       
-% Working, 1 model.
-
-%?- according_to(r34_1_d,described_in_s1(X)).       
-% Working, 2 models.
-
-%?- according_to(r34_1_c,described_in_s1(X)).       
-% Working, 1 model.
-
-%?- according_to(r34_1_b,must_not(Actor, accept, Appointment)). 
-% DEADLY SLOW. ~5 seconds per model and abducibility
-% Working, 93 models (31 executive appointments * 3 interferences)
-
-%law_practice(this).
-%law_practice(that).
-%?- according_to(r34_2_b,may(LP,accept,EA)).
-% Not working. Zero models with just abducibility.
-% Infinite models if there is one law firm specified.
-% 2 models if two law practices specified and abducibility turned off, which is expected.
-% 3 models if using --prev_forall and one firm specified. Expecting 2.
-% Infinite models if there is one law firm specified, and law_practice is not abducible.
-
-%law_practice(this).
-%law_practice(that).
-%?- according_to(r34_2_a,may(LP,accept,EA)).                 
-% Not working with just abducibility.
-% 2 models if you define two law practices and remove abducibility, which is expected.
-
-%law_practice(this).
-%law_practice(that).
-%?- according_to(r34_6_a,must_not(LP,accept,EA)).           
-% Dont know if it is working. Returns 8 models if you define one law_practice(this).
-% Returns none if you do not.
-% Returns 2 models (should be 1?), IF you define one law_practice(this) 
-% and law_practice(X) is NOT abducible.
-% 2 models if you define two law practices and remove abducibility, which is expected.
-
-%?- according_to(r34_1_a,described_in_s1(Business)).
-% Working, 6 models, but I needed to change the order of the clauses in the conditions of the rules.
-
-%?- according_to(r34_1,must_not(Actor, accept, Appointment)).       
-% Not working, infinite models.
-% Expecting 682 31 EA * 2 Bus, * (6+1+1+2+1)
-% with --prev_forall I get exactly 682 models.
-% If I change the order of the predicates I can get it to work, but it is DEADLY slow, 
-% and it generates more than the correct number of models.
-
-%?- according_to(Rule, described_in_s1(Business)).
-% Working, 11 models.
