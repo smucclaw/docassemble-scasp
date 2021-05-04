@@ -147,7 +147,7 @@ def make_tree(lines):
     return meta_lines
 
 def display_list(input,depth=0):
-    #print("Processing a list of length " + str(len(input)) + ", starting with " + input[0]['text'] + " at depth " + str(depth) + "." )
+    #print(("    " * int(depth)) + "Processing a list of length " + str(len(input)) + ", starting with " + input[0]['text'] + " at depth " + str(depth) + "." )
     if depth==0:
         #print("<ul id=\"explanation\" class=\"active\">")
         output = "<ul id=\"explanation\" class=\"active\">"
@@ -155,50 +155,55 @@ def display_list(input,depth=0):
 
         #print("<ul class=\"nested\">")
         output = "<ul class=\"nested\">"
-    #print("Setting the number of lines to skip to zero.")
+    #print(("    " * int(depth)) + "Setting the number of lines to skip to zero.")
 
     skip = 0
-    #print("Going through the lines.")
+    #print(("    " * int(depth)) + "Going through the lines.")
     for i in range(len(input)):
-        #print("Working on line " + str(i) + ", \"" + input[i]['text'] + " at depth " + str(input[i]['depth']) + ".")
+        #print(("    " * int(depth)) + "Working on line " + str(i) + ", \"" + input[i]['text'] + " at depth " + str(input[i]['depth']) + ".")
         if skip > 0:
-            #print("Skipping.")
+            #print(("    " * int(depth)) + "Skipping.")
             skip = skip-1
-            #print("Skips remaining: " + str(skip) + ".")
+            #print(("    " * int(depth)) + "Skips remaining: " + str(skip) + ".")
             continue
 
         if input[i]['depth'] == depth:
-            #print("This line is at the right depth, adding it.")
+            #print(("    " * int(depth)) + "This line is at the right depth, adding it.")
             if input[i]['text'].endswith('because'):
-                #print("This line has children.")
+                #print(("    " * int(depth)) + "This line has children.")
                 #print("<li><span class=\"caret\">")
                 output += "<li><span class=\"caret\">"
             else:
-                #print("This line does not have children.")
+                #print(("    " * int(depth)) + "This line does not have children.")
                 #print("<li>")
                 output += "<li>"
             #print(input[i]['text'])
             output += input[i]['text']
             if input[i]['text'].endswith('because'):
 
-                #print("</span></li>")
+                #print("</span>")
 
-                output += "</span></li>"
+                output += "</span>"
             else:
                 #print("</li>")
                 output += "</li>"
 
         if input[i]['depth'] > depth:
-            #print("This line is deeper.")
+            #print(("    " * int(depth)) + "This line is deeper.")
             sub_output = display_list(input[i:],input[i]['depth'])
-            skip = sub_output.count("<li>") # skip the parts already done.
+            skip = sub_output.count("<li>")-1 # skip the parts already done.
+            #print(("    " * int(depth)) + "Setting the number of lines to skip to " + str(skip) + ".")
             output += sub_output
-        while input[i]['depth'] < depth:
-            #print("This line is at a lower depth.")
+        if input[i]['depth'] < depth:
+            #print(("    " * int(depth)) + "This line is shallower.")
             #print("</ul>")
             #output += "</ul>"
-            depth = depth-1
-            #print("Resetting depth to " + str(depth) + ".")
-    #print("</ul>")        
+            output += "</ul></li>"
+            return output
+            #depth = depth-1
+            #print(("    " * int(depth)) + "Resetting depth to " + str(depth) + ".")
+    
     output += "</ul>"
+    if depth != 0:
+        output += "</li>"
     return output
