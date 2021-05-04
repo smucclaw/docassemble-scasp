@@ -150,14 +150,14 @@ def display_list(input,depth=0):
     if depth==0:
         output = "<ul id=\"explanation\" class=\"active\">"
     else:
-        output = "<ul class=\"nested\">"
+        output = "<ul class=\"nested\">" # This is being called when it should not be.
     skip = 0
     for i in range(len(input)):
         if skip > 0:
             skip = skip-1
             continue
         while input[i]['depth'] < depth:
-            output += "</li></ul>"
+            output += "</ul>"
             depth = depth-1
         if input[i]['depth'] == depth:
             if input[i]['text'].endswith('because'):
@@ -166,11 +166,11 @@ def display_list(input,depth=0):
                 output += "<li>"
             output += input[i]['text']
             if input[i]['text'].endswith('because'):
-                output += "</span>"
+                output += "</span></li>"
             else:
                 output += "</li>"
-        if input[i]['depth'] > depth:
-            sub_output = display_list(input[i:],input[i]['depth'])
+        if input[i]['depth'] > depth: # which means this is true when it shouldn't be.
+            sub_output = display_list(input[i:],input[i]['depth']) # It is getting called here.
             skip = sub_output.count("<li>") # skip the parts already done.
             output += sub_output
 
