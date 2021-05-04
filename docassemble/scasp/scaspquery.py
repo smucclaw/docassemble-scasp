@@ -35,7 +35,7 @@ def sendQuery(filename, number=0):
 
     # If result is no models
     if results.endswith('no models\n\n'):
-        query = results.replace('\n\nno models\n\n','').replace('\n    ','').replace('QUERY:','')
+        query = results.replace('\n\nno models\n\n','').replace('\n    ','').replace('QUERY:','').replace('{','').replace('}','')
         output['query'] = query
         output['result'] = 'No'
         return output
