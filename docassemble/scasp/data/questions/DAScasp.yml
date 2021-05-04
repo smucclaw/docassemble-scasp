@@ -26,7 +26,7 @@ content: |
   % endif
 
   % for a in answer['answers']:
-  #### Answer ${ loop.index+1 }: ${ capitalize(a['nlg_answer']) }
+  #### Answer ${ loop.index+1 }: ${ a['nlg_answer'] }
   
   % if len(a['models']) == 1:
   There is 1 explanation for this answer:
