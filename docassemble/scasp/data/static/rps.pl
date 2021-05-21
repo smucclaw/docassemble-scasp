@@ -27,4 +27,10 @@ sign_beats_sign(paper,scissors).
 
 %winner_of_game(jason,game).
 
-?- winner_of_game(P,G).
+big(a).
+big(b).
+#abducible big(X).
+
+awesome(X) :- big(X), X \= a, X \= b.
+
+?- awesome(X).
