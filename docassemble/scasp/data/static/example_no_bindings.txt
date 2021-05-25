@@ -1,0 +1,12 @@
+QUERY:?- winner_of_game(jason,game).
+
+        ANSWER: 1 (in 0.091 ms)
+
+JUSTIFICATION_TREE:
+winner_of_game(jason,game),
+global_constraint.
+
+MODEL:
+{ winner_of_game(jason,game) }
+
+BINDINGS:
