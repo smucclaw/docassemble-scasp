@@ -18,13 +18,17 @@ except ModuleNotFoundError:
 
 
 # Send an s(CASP) file to the scasp reasoner and return the results.
-def sendQuery(filename, number=0):
+def sendQuery(filename, number=0, human=True):
     number_flag = "-s" + str(number)
+    if human:
+        human_flag = "--human"
+    else:
+        human_flag = ""
     if no_docassemble:
         scasp_location = "scasp"
     else:
         scasp_location = get_config('scasp')['location'] if (get_config('scasp') and get_config('scasp')['location']) else '/var/www/.ciao/build/bin/scasp'
-    results = subprocess.run([scasp_location, '--human', '--tree', number_flag, filename], capture_output=True).stdout.decode('utf-8')
+    results = subprocess.run([scasp_location, human_flag, '--tree', number_flag, filename], capture_output=True).stdout.decode('utf-8')
     
     pattern = re.compile(r"daSCASP_([^),\s]*)")
     matches = list(pattern.finditer(results))
