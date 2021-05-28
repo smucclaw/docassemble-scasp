@@ -211,3 +211,27 @@ def display_list(input,depth=0):
     if depth != 0:
         output += "</li>"
     return output
+
+
+def display_list_from_lists(input, top_level=True, ul_attrs="id=\"explanation\" class=\"active\""):
+    output = f"<ul {ul_attrs}>"
+
+    for i in range(len(input)):
+        if isinstance(input[i], str):
+            if input[i].endswith('because'):
+                output += "<li><span class=\"caret\">"
+            else:
+                output += "<li>"
+            output += input[i]
+            if input[i].endswith('because'):
+                output += "</span>"
+            else:
+                output += "</li>"
+
+        if isinstance(input[i], list):
+            sub_output = display_list_from_lists(input[i], False, "class=\"nested\"")
+            output += sub_output
+            output += "</li>"
+
+    output += "</ul>"
+    return output

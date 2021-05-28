@@ -1,6 +1,6 @@
 QUERY:?- winner_of_game(Player,Game).
 
-        ANSWER: 1 (in 7.265 ms)
+	ANSWER:	1 (in 7.265 ms)
 
 JUSTIFICATION_TREE:
 winner_of_game(1,testgame) :-
@@ -34,7 +34,7 @@ Player = 1
 Game = testgame
 
 
-        ANSWER: 2 (in 0.141 ms)
+	ANSWER:	2 (in 0.141 ms)
 
 JUSTIFICATION_TREE:
 winner_of_game(1,testgame) :-
@@ -68,7 +68,7 @@ Player = 1
 Game = testgame
 
 
-        ANSWER: 3 (in 0.194 ms)
+	ANSWER:	3 (in 0.194 ms)
 
 JUSTIFICATION_TREE:
 winner_of_game(1,testgame) :-
@@ -102,7 +102,7 @@ Player = 1
 Game = testgame
 
 
-        ANSWER: 4 (in 7.962 ms)
+	ANSWER:	4 (in 7.962 ms)
 
 JUSTIFICATION_TREE:
 winner_of_game(2,testgame) :-
@@ -136,7 +136,7 @@ Player = 2
 Game = testgame
 
 
-        ANSWER: 5 (in 0.146 ms)
+	ANSWER:	5 (in 0.146 ms)
 
 JUSTIFICATION_TREE:
 winner_of_game(2,testgame) :-
@@ -170,7 +170,7 @@ Player = 2
 Game = testgame
 
 
-        ANSWER: 6 (in 0.261 ms)
+	ANSWER:	6 (in 0.261 ms)
 
 JUSTIFICATION_TREE:
 winner_of_game(2,testgame) :-

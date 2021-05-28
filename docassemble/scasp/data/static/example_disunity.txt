@@ -1,6 +1,6 @@
 QUERY:?- winner_of_game(P,G).
 
-        ANSWER: 1 (in 55.715 ms)
+	ANSWER:	1 (in 55.715 ms)
 
 JUSTIFICATION_TREE:
 winner_of_game(P | {P \= 1},G) :-
