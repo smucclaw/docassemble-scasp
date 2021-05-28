@@ -1,13 +1,5 @@
-from docassemble.scasp.scaspquery import process_output, display_list_from_lists
+from docassemble.scasp.scaspquery import display_list_from_lists
 from docassemble.scasp.scaspquery import display_list
-
-
-def test_process_output_disunity():
-    file = open("/home/ruslan/code/docassemble-scasp/docassemble/scasp/data/static/example_disunity.txt")
-    line = file.read()
-    output = process_output(line)
-    assert output == {'query': '?- winner_of_game(jason,game).', 'result': 'No'}
-
 
 mortal = [
     {'text': 'socrates is mortal, because', 'depth': 0.0},
