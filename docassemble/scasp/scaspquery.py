@@ -30,11 +30,16 @@ def sendQuery(filename, number=0, human=True):
         scasp_location = get_config('scasp')['location'] if (get_config('scasp') and get_config('scasp')['location']) else '/var/www/.ciao/build/bin/scasp'
     results = subprocess.run([scasp_location, human_flag, '--tree', number_flag, filename], capture_output=True).stdout.decode('utf-8')
     
+    return results
+
+    # This decoding corresponds to an encoding done in docassemble-l4, so it should be removed, and this file refactored
+    # to allow it to be done in that module.
     pattern = re.compile(r"daSCASP_([^),\s]*)")
     matches = list(pattern.finditer(results))
     for m in matches:
         results = results.replace(m.group(0),urllib.parse.unquote_plus(m.group(1).replace('__perc__','%').replace('__plus__','+')))
     
+def format_human_results(results):
     output = {}
 
     # If result is no models
@@ -92,6 +97,12 @@ def sendQuery(filename, number=0, human=True):
             # Add the answer to the output_answers list
             output['answers'].append(new_answer.copy())
         
+        
+        # TODO: Should probably be separated out into a different function.
+
+        # TODO: I'm not sure if this re-organization is valid in all use cases. Might be worth
+        # considering making it optional.
+
         # Reorganize the tree so that bindings are a level above models and explanations.
         
         new_output = {}
@@ -112,6 +123,8 @@ def sendQuery(filename, number=0, human=True):
                     # na['models']['time'] = a['time']
                     # na['models']['model'] = a['model']
                     # na['models']['explanations'] = a['explanations']
+        
+        #TODO: Should probably be a separate function.
         
         for i in range(len(new_output['answers'])):
             nlg_answer = new_output['query']
@@ -149,6 +162,10 @@ def make_tree(lines):
     meta_lines = get_depths(lines)
 
     return meta_lines
+
+# generating lists is not scasp specific, but it is useful in docassemble.
+# If this module gets refactored into an s(CASP) module and a docassemble-scasp module, this is most of what
+# would get left behind.
 
 def display_list(input,depth=0):
     #print(("    " * int(depth)) + "Processing a list of length " + str(len(input)) + ", starting with " + input[0]['text'] + " at depth " + str(depth) + "." )
@@ -235,3 +252,11 @@ def display_list_from_lists(input, top_level=True, ul_attrs="id=\"explanation\" 
 
     output += "</ul>"
     return output
+
+# I think that to make it able to deal with both human and non-human output, we are going to
+# have to maintain the text-based method for human output, because I don't think the human output
+# can be parsed unambiguously. So we need a function for generating the existing output data structure,
+# and a sepearte path that first parses the non-human response, and then has a function to generate the
+# same data structure from that parsing, so that you can parse, modify, and then display, if you want.
+# The human method should also be refactored to use the lists of lists display method, so that we only have
+# that code once. And it should not be called here, it should be called in the interface.

@@ -1,0 +1,56 @@
+QUERY:I would like to know if
+     Player is the winner of the game Game.
+
+	ANSWER:	1 (in 19.337 ms)
+
+JUSTIFICATION_TREE:
+1 is the winner of the game testgame, because
+    1 is a rock paper scissors player, and
+    2 is a rock paper scissors player, and
+    testgame is a game of rock paper scissors, and
+    1 participated in the game testgame, because
+        it is assumed that 1 participated in the game testgame, and
+        'abducible' holds (for player_in_game(1,testgame)), because
+            'abducible' holds (for player_in_game(1,testgame)).
+    2 participated in the game testgame, because
+        it is assumed that 2 participated in the game testgame, and
+        'abducible' holds (for player_in_game(2,testgame)), because
+            'abducible' holds (for player_in_game(2,testgame)).
+    1 threw rock, because
+        it is assumed that 1 threw rock, and
+        'abducible' holds (for player_threw_sign(1,rock)), because
+            'abducible' holds (for player_threw_sign(1,rock)).
+    2 threw scissors, because
+        it is assumed that 2 threw scissors, and
+        'abducible' holds (for player_threw_sign(2,scissors)), because
+            'abducible' holds (for player_threw_sign(2,scissors)).
+    rock beats scissors.
+The global constraints hold, because
+    the global constraint number 1 holds, because
+        there is no evidence that 2 is the winner of the game Var2 not equal testgame, because
+            2 is a rock paper scissors player, justified above, and
+            there is no evidence that Var3 not equal 1, nor 2 is a rock paper scissors player, and
+            1 is a rock paper scissors player, justified above, and
+            there is no evidence that Var2 not equal testgame is a game of rock paper scissors.
+        there is no evidence that 2 is the winner of the game testgame, because
+            2 is a rock paper scissors player, justified above, and
+            there is no evidence that Var4 not equal 1, nor 2 is a rock paper scissors player, and
+            1 is a rock paper scissors player, justified above, and
+            testgame is a game of rock paper scissors, justified above, and
+            2 participated in the game testgame, justified above, and
+            1 participated in the game testgame, justified above, and
+            there is no evidence that 2 threw Var5 not equal scissors, because
+                it is assumed that there is no evidence that 2 threw Var5 not equal scissors.
+            2 threw scissors, justified above, and
+            there is no evidence that 1 threw Var6 not equal rock, because
+                it is assumed that there is no evidence that 1 threw Var6 not equal rock.
+            1 threw rock, justified above, and
+            there is no evidence that scissors beats rock.
+
+MODEL:
+{ winner_of_game(1,testgame),  player(1),  player(2),  game(testgame),  player_in_game(1,testgame),  player_in_game(2,testgame),  player_threw_sign(1,rock),  player_threw_sign(2,scissors),  sign_beats_sign(rock,scissors),  not winner_of_game(2,Var2 | {Var2 \= testgame}),  not player(Var3 | {Var3 \= 1,Var3 \= 2}),  not game(Var2 | {Var2 \= testgame}),  not winner_of_game(2,testgame),  not player(Var4 | {Var4 \= 1,Var4 \= 2}),  not player_threw_sign(2,Var5 | {Var5 \= scissors}),  not player_threw_sign(1,Var6 | {Var6 \= rock}),  not sign_beats_sign(scissors,rock) }
+
+BINDINGS: 
+Player equal 1 
+Game equal testgame
+
