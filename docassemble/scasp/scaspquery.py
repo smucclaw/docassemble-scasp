@@ -35,11 +35,17 @@ def sendQuery(filename, number=0, human=True):
     for m in matches:
         results = results.replace(m.group(0),urllib.parse.unquote_plus(m.group(1).replace('__perc__','%').replace('__plus__','+')))
     
+    return process_output(results)
+
+
+def process_output(results):
     output = {}
 
     # If result is no models
     if results.endswith('no models\n\n'):
-        query = results.replace('\n\nno models\n\n','').replace('\n    ','').replace('QUERY:','').replace('{','').replace('}','').replace('% ','')
+        query = results.replace('\n\nno models\n\n', '').replace('\n    ', '').replace('QUERY:', '').replace('{',
+                                                                                                             '').replace(
+            '}', '').replace('% ', '')
         output['query'] = query
         output['result'] = 'No'
         return output
@@ -48,14 +54,16 @@ def sendQuery(filename, number=0, human=True):
         answers = results.split("\tANSWER:\t")
         query = answers[0]
         del answers[0]
-        query = query.replace('\n','').replace('     ',' ').replace('QUERY:','').replace('% ','').replace('{','').replace('}','')
+        query = query.replace('\n', '').replace('     ', ' ').replace('QUERY:', '').replace('% ', '').replace('{',
+                                                                                                              '').replace(
+            '}', '')
         output['query'] = query
         output['result'] = 'Yes'
         output['answers'] = []
-        
+
         # for each actual answer
         for a in answers:
-            #Separate out the time, tree, model, and bindings
+            # Separate out the time, tree, model, and bindings
             answer_parts = a.split('\n\nJUSTIFICATION_TREE:\n')
             time = answer_parts[0]
             answer_parts = answer_parts[1].split('\n\nMODEL:\n')
@@ -67,19 +75,19 @@ def sendQuery(filename, number=0, human=True):
             if len(answer_parts) > 1:
                 bindings = answer_parts[1].splitlines()
             # Reformat the Time
-            time = time.replace(' ms)','').replace('(in ','').split(' ')[1]
+            time = time.replace(' ms)', '').replace('(in ', '').split(' ')[1]
 
             # Reformat the Tree
             explanations = make_tree(tree)
             explanations = display_list(explanations)
 
             # Reformat the Model
-            model = model.replace('{ ','').replace(' }','').split(',  ')
+            model = model.replace('{ ', '').replace(' }', '').split(',  ')
 
             # Reformat the Bindings
             if bindings:
                 bindings = [b for b in bindings if b != '' and b != ' ']
-                bindings = [b.replace(' equal ',': ') for b in bindings]
+                bindings = [b.replace(' equal ', ': ') for b in bindings]
 
             # Create a dictionary for this answer
             new_answer = {}
@@ -91,9 +99,9 @@ def sendQuery(filename, number=0, human=True):
 
             # Add the answer to the output_answers list
             output['answers'].append(new_answer.copy())
-        
+
         # Reorganize the tree so that bindings are a level above models and explanations.
-        
+
         new_output = {}
         new_output['query'] = output['query']
         new_output['result'] = output['result']
@@ -112,16 +120,17 @@ def sendQuery(filename, number=0, human=True):
                     # na['models']['time'] = a['time']
                     # na['models']['model'] = a['model']
                     # na['models']['explanations'] = a['explanations']
-        
+
         for i in range(len(new_output['answers'])):
             nlg_answer = new_output['query']
-            nlg_answer = nlg_answer.replace('I would like to know if ','')
+            nlg_answer = nlg_answer.replace('I would like to know if ', '')
             for b in new_output['answers'][i]['bindings']:
                 splitbinding = b.split(': ')
-                nlg_answer = nlg_answer.replace(splitbinding[0],splitbinding[1])
+                nlg_answer = nlg_answer.replace(splitbinding[0], splitbinding[1])
             new_output['answers'][i]['nlg_answer'] = nlg_answer
-        
+
         return new_output
+
 
 def get_depths(lines):
     output = []
