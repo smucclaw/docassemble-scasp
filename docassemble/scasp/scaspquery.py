@@ -34,7 +34,10 @@ def sendQuery(filename, number=0, human=True):
     matches = list(pattern.finditer(results))
     for m in matches:
         results = results.replace(m.group(0),urllib.parse.unquote_plus(m.group(1).replace('__perc__','%').replace('__plus__','+')))
-    
+    return process_output(results)
+
+
+def process_output(results):
     output = {}
 
     # If result is no models
