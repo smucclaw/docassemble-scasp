@@ -31,8 +31,8 @@ import string
 import yaml
 
 
-TESTING = True
-DISPLAY_UNEXPECTED_TEST_RESULTS_ONLY = True
+TESTING = False
+DISPLAY_UNEXPECTED_TEST_RESULTS_ONLY = False
 
 if TESTING:
     pp.enable_all_warnings()

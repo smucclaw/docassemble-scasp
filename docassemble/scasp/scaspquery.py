@@ -10,6 +10,9 @@
 import subprocess
 import re
 import urllib.parse
+import pyparsing
+from responseparser import response, annotate_indents, query_statement, no_models
+
 no_docassemble = False
 try:
     from docassemble.base.functions import get_config
@@ -34,10 +37,13 @@ def sendQuery(filename, number=0, human=True):
     matches = list(pattern.finditer(results))
     for m in matches:
         results = results.replace(m.group(0),urllib.parse.unquote_plus(m.group(1).replace('__perc__','%').replace('__plus__','+')))
-    return process_output(results)
+    if human:
+        return process_human_output(results)
+    else:
+        return process_scasp_output(results)
 
 
-def process_output(results):
+def process_human_output(results):
     output = {}
 
     # If result is no models
@@ -282,3 +288,50 @@ def display_list_from_lists(input, top_level=True, ul_attrs="id=\"explanation\" 
 
     output += "</ul>"
     return output
+
+# Copied from docassemble-l4
+def entity_search(l,target):
+    results = []
+    if target in l:
+        results.append(l[target])
+    for i in range(len(l)):
+        if isinstance(l[i-1],pyparsing.ParseResults) and target in l[i-1]:
+            results.append(l[i-1][target])
+        if isinstance(l[i-1],pyparsing.ParseResults):
+            child_search = entity_search(l[i-1],target)
+            if len(child_search):
+                results += child_search
+    return results
+
+def process_scasp_output(results):
+    # output['query']
+    # output['response']
+    # output['answers']
+    # output['answers'][0]['time']
+    # output['answers'][0]['model']
+    # output['answers'][0]['bindings'] (optional)
+    # output['answers'][0]['explanations'] (list of lists style)
+
+    output = {}
+
+    query = pyparsing.originalTextFor(query_statement).parseString(annotate_indents(results))
+    output['query'] = query[0].replace('QUERY:?- ','')
+
+    parse = response.parseString(annotate_indents(results))
+
+    check_for_no_models = entity_search(parse,"no_models")
+    if check_for_no_models:
+        output['response'] = 'No'
+    else:
+        output['response'] = 'Yes'
+        output['answers'] = []
+        # Go through the answers and add them.
+
+    return output
+
+
+
+file = 'example_disunity.txt'
+responsefile = open('docassemble/scasp/data/static/' + file, 'r')
+code = responsefile.read()
+print(process_scasp_output(code))
