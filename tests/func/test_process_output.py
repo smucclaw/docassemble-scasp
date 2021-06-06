@@ -1,5 +1,14 @@
-from docassemble.scasp.scaspquery import display_list_from_lists
+import os
+
+import pytest
+
+from docassemble.scasp.scaspquery import display_list_from_lists, process_output
 from docassemble.scasp.scaspquery import display_list
+
+FIXTURE_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    'test_files',
+)
 
 mortal = [
     {'text': 'socrates is mortal, because', 'depth': 0.0},
@@ -180,19 +189,50 @@ disunity_list = [
 ]
 
 
-def test_display_mortal():
-    old = display_list(mortal)
-    new = display_list_from_lists(mortal_list)
-    assert old == new
+@pytest.mark.parametrize("scasp_data", ["mortal", "model", "disunity"], indirect=True)
+def test_e2e(scasp_data):
+    (scasp_output, html_output) = scasp_data
+    output = process_output(scasp_output)
+    assert output["answers"][0]["models"][0]["explanations"] == html_output
 
 
-def test_display_model():
-    old = display_list(model)
-    new = display_list_from_lists(model_list)
-    assert old == new
-
-
-def test_display_disunity():
+@pytest.mark.parametrize("scasp_data", ["disunity"], indirect=True)
+def test_display_tree_disunity(scasp_data):
+    (_, html_output) = scasp_data
     old = display_list(disunity)
-    new = display_list_from_lists(disunity_list)
-    assert old == new
+    assert old == html_output
+
+
+@pytest.mark.parametrize("scasp_data", ["model"], indirect=True)
+def test_display_tree_model(scasp_data):
+    (_, html_output) = scasp_data
+    old = display_list(model)
+    assert old == html_output
+
+
+@pytest.mark.parametrize("scasp_data", ["mortal"], indirect=True)
+def test_display_tree_mortal(scasp_data):
+    (_, html_output) = scasp_data
+    old = display_list(mortal)
+    assert old == html_output
+
+
+@pytest.mark.parametrize("scasp_data", ["disunity"], indirect=True)
+def test_display_list_disunity(scasp_data):
+    (_, html_output) = scasp_data
+    old = display_list_from_lists(disunity_list)
+    assert old == html_output
+
+
+@pytest.mark.parametrize("scasp_data", ["model"], indirect=True)
+def test_display_list_model(scasp_data):
+    (_, html_output) = scasp_data
+    old = display_list_from_lists(model_list)
+    assert old == html_output
+
+
+@pytest.mark.parametrize("scasp_data", ["mortal"], indirect=True)
+def test_display_list_mortal(scasp_data):
+    (_, html_output) = scasp_data
+    old = display_list_from_lists(mortal_list)
+    assert old == html_output

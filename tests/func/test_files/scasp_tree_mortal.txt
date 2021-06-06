@@ -1,0 +1,3 @@
+socrates is mortal, because
+    socrates is human.
+The global constraints hold.'

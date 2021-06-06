@@ -1,0 +1,44 @@
+QUERY:?- winner_of_game(P,G).
+
+	ANSWER:	1 (in 55.715 ms)
+
+JUSTIFICATION_TREE:
+winner_of_game(P | {P \= 1},G) :-
+    player(P | {P \= 1}) :-
+        chs(player(P | {P \= 1})),
+        abducible(player(P | {P \= 1})) :-
+            abducible(player(P | {P \= 1})).
+    player(1) :-
+        chs(player(1)),
+        proved(player(1)),
+        abducible(player(1)) :-
+            abducible(player(1)),
+            proved(abducible(player(1))).
+    game(G) :-
+        chs(game(G)),
+        abducible(game(G)) :-
+            abducible(game(G)).
+    player_in_game(P | {P \= 1},G) :-
+        chs(player_in_game(P | {P \= 1},G)),
+        abducible(player_in_game(P | {P \= 1},G)) :-
+            abducible(player_in_game(P | {P \= 1},G)).
+    player_in_game(1,G) :-
+        chs(player_in_game(1,G)),
+        abducible(player_in_game(1,G)) :-
+            abducible(player_in_game(1,G)).
+    player_threw_sign(P | {P \= 1},rock) :-
+        chs(player_threw_sign(P | {P \= 1},rock)),
+        abducible(player_threw_sign(P | {P \= 1},rock)) :-
+            abducible(player_threw_sign(P | {P \= 1},rock)).
+    player_threw_sign(1,scissors) :-
+        chs(player_threw_sign(1,scissors)),
+        abducible(player_threw_sign(1,scissors)) :-
+            abducible(player_threw_sign(1,scissors)).
+    sign_beats_sign(rock,scissors).
+global_constraint.
+
+MODEL:
+{ winner_of_game(P | {P \= 1},G),  player(P | {P \= 1}),  player(1),  game(G),  player_in_game(P | {P \= 1},G),  player_in_game(1,G),  player_threw_sign(P | {P \= 1},rock),  player_threw_sign(1,scissors),  sign_beats_sign(rock,scissors) }
+
+BINDINGS: 
+P \= 1

@@ -1,0 +1,16 @@
+% QUERY:I would like to know if
+     X is mortal.
+
+	ANSWER:	1 (in 0.043 ms)
+
+JUSTIFICATION_TREE:
+socrates is mortal, because
+    socrates is human.
+The global constraints hold.
+
+MODEL:
+{ mortal(socrates),  human(socrates) }
+
+BINDINGS: 
+X equal socrates
+

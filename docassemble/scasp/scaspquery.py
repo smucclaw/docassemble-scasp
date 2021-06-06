@@ -73,8 +73,8 @@ def process_output(results):
             time = time.replace(' ms)','').replace('(in ','').split(' ')[1]
 
             # Reformat the Tree
-            explanations = make_tree(tree)
-            explanations = display_list(explanations)
+            explanations = make_tree_list(tree)
+            explanations = display_list_from_lists(explanations)
 
             # Reformat the Model
             model = model.replace('{ ','').replace(' }','').split(',  ')
@@ -121,7 +121,8 @@ def process_output(results):
             nlg_answer = nlg_answer.replace('I would like to know if ','')
             for b in new_output['answers'][i]['bindings']:
                 splitbinding = b.split(': ')
-                nlg_answer = nlg_answer.replace(splitbinding[0],splitbinding[1])
+                if len(splitbinding) > 1:
+                    nlg_answer = nlg_answer.replace(splitbinding[0],splitbinding[1])
             new_output['answers'][i]['nlg_answer'] = nlg_answer
         
         return new_output
@@ -146,10 +147,53 @@ def get_depths(lines):
         output.append(this_line.copy())
     return output
 
+
+def get_depths_list(lines):
+    stack = [[]]
+    for l in lines:
+        # If we get to global constraints, stop.
+        if l.startswith('The global constraints hold'):
+            break
+        # Skip lines that start with 'abducible' holds
+        if l.lstrip(' ').startswith('\'abducible\' holds'):
+            continue
+
+        current_line_depth = (len(l) - len(l.lstrip(' ')))//4
+        tree_depth = len(stack) - 1
+
+        if current_line_depth > tree_depth:
+            new_level = []
+            stack[-1].append(new_level)
+            stack.append(new_level)
+
+        if current_line_depth < tree_depth:
+            for i in range(tree_depth-current_line_depth):  # Unwind stack
+                stack.pop()
+
+        current_list = stack[-1]  # peek
+
+        line_text = l.lstrip(' ')
+
+        # s(CASP) applies periods to some lines that we don't display, so
+        # just get rid of them all.
+        if line_text.endswith('.'):
+            line_text = line_text.rstrip('.')
+
+        current_list.append(line_text)
+    return stack[0]
+
+
 def make_tree(lines):
     # Add depth information to the lines
     lines = lines.splitlines()
     meta_lines = get_depths(lines)
+
+    return meta_lines
+
+
+def make_tree_list(lines):
+    lines = lines.splitlines()
+    meta_lines = get_depths_list(lines)
 
     return meta_lines
 

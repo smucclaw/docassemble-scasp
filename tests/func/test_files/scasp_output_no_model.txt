@@ -1,0 +1,3 @@
+QUERY:?- winner_of_game(jason,game).
+
+no models
