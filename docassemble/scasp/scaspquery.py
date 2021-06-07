@@ -320,12 +320,12 @@ def process_scasp_output(results):
     parse = response.parseString(annotate_indents(results))
 
     check_for_no_models = entity_search(parse,"no_models")
-    if check_for_no_models:
+    if not check_for_no_models:
         output['response'] = 'No'
     else:
         output['response'] = 'Yes'
         output['answers'] = []
-        # Go through the answers and add them.
+        # TODO: Go through the answers and add them.
 
     return output
 
