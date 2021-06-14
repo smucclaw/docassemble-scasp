@@ -30,6 +30,15 @@ def scasp_data(request):
 
 
 @pytest.fixture
+def scasp_output(request):
+    scasp_output_filename = f"scasp_output_{request.param}.txt"
+    scasp_output_full_filename = os.path.join(FIXTURE_DIR, scasp_output_filename)
+
+    with open(scasp_output_full_filename) as scasp_output:
+        yield scasp_output.read()
+
+
+@pytest.fixture
 def scasp_tree(request):
     scasp_output_filename = f"scasp_tree_{request.param}.txt"
     scasp_output_full_filename = os.path.join(FIXTURE_DIR, scasp_output_filename)

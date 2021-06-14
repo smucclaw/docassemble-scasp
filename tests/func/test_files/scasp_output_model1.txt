@@ -1,0 +1,34 @@
+QUERY:?- winner_of_game(Player,Game).
+
+	ANSWER:	1 (in 7.265 ms)
+
+JUSTIFICATION_TREE:
+winner_of_game(1,testgame) :-
+    player(1),
+    player(2),
+    game(testgame),
+    player_in_game(1,testgame) :-
+        chs(player_in_game(1,testgame)),
+        abducible(player_in_game(1,testgame)) :-
+            abducible(player_in_game(1,testgame)).
+    player_in_game(2,testgame) :-
+        chs(player_in_game(2,testgame)),
+        abducible(player_in_game(2,testgame)) :-
+            abducible(player_in_game(2,testgame)).
+    player_threw_sign(1,rock) :-
+        chs(player_threw_sign(1,rock)),
+        abducible(player_threw_sign(1,rock)) :-
+            abducible(player_threw_sign(1,rock)).
+    player_threw_sign(2,scissors) :-
+        chs(player_threw_sign(2,scissors)),
+        abducible(player_threw_sign(2,scissors)) :-
+            abducible(player_threw_sign(2,scissors)).
+    sign_beats_sign(rock,scissors).
+global_constraint.
+
+MODEL:
+{ winner_of_game(1,testgame),  player(1),  player(2),  game(testgame),  player_in_game(1,testgame),  player_in_game(2,testgame),  player_threw_sign(1,rock),  player_threw_sign(2,scissors),  sign_beats_sign(rock,scissors) }
+
+BINDINGS: 
+Player = 1 
+Game = testgame
