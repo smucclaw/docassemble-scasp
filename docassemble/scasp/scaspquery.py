@@ -11,7 +11,7 @@ import subprocess
 import re
 import urllib.parse
 import pyparsing
-from responseparser import response, annotate_indents, query_statement, no_models
+from .responseparser import response, annotate_indents, query_statement, no_models
 
 no_docassemble = False
 try:
@@ -36,7 +36,8 @@ def sendQuery(filename, number=0, human=True):
     pattern = re.compile(r"daSCASP_([^),\s]*)")
     matches = list(pattern.finditer(results))
     for m in matches:
-        results = results.replace(m.group(0),urllib.parse.unquote_plus(m.group(1).replace('__perc__','%').replace('__plus__','+')))
+        results = results.replace(m.group(0), urllib.parse.unquote_plus(m.group(1).replace('__perc__', '%').replace('__plus__', '+')))
+
     if human:
         return process_human_output(results)
     else:
@@ -315,12 +316,12 @@ def process_scasp_output(results):
     output = {}
 
     query = pyparsing.originalTextFor(query_statement).parseString(annotate_indents(results))
-    output['query'] = query[0].replace('QUERY:?- ','')
+    output['query'] = query[0].replace('QUERY:?- ', '')
 
     parse = response.parseString(annotate_indents(results))
 
-    check_for_no_models = entity_search(parse,"no_models")
-    if not check_for_no_models:
+    found_no_models = entity_search(parse, "no_models")
+    if found_no_models:
         output['response'] = 'No'
     else:
         output['response'] = 'Yes'
@@ -330,8 +331,19 @@ def process_scasp_output(results):
     return output
 
 
+def extract_answers(parse):
+    answers = parse["answer set"]
+    return [extract_answer(a) for a in answers]
 
-file = 'example_disunity.txt'
-responsefile = open('docassemble/scasp/data/static/' + file, 'r')
-code = responsefile.read()
-print(process_scasp_output(code))
+
+def extract_answer(answer):
+    lor = answer["list of reasons"]
+    lor.pprint()
+    return "answer"
+
+
+if __name__ == "__main__":
+    file = 'example_disunity.txt'
+    responsefile = open('docassemble/scasp/data/static/' + file, 'r')
+    code = responsefile.read()
+    print(process_scasp_output(code))

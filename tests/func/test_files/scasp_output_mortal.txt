@@ -1,16 +1,15 @@
-% QUERY:I would like to know if
-     X is mortal.
+QUERY:?- mortal(X).
 
-	ANSWER:	1 (in 0.043 ms)
+	ANSWER:	1 (in 0.04 ms)
 
 JUSTIFICATION_TREE:
-socrates is mortal, because
-    socrates is human.
-The global constraints hold.
+mortal(socrates) :-
+    human(socrates).
+global_constraint.
 
 MODEL:
 { mortal(socrates),  human(socrates) }
 
 BINDINGS: 
-X equal socrates
+X = socrates
 

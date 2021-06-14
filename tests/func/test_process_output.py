@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from docassemble.scasp.scaspquery import display_list_from_lists, process_output
+from docassemble.scasp.scaspquery import display_list_from_lists, process_human_output
 from docassemble.scasp.scaspquery import display_list
 
 FIXTURE_DIR = os.path.join(
@@ -189,10 +189,10 @@ disunity_list = [
 ]
 
 
-@pytest.mark.parametrize("scasp_data", ["mortal", "model", "disunity"], indirect=True)
+@pytest.mark.parametrize("scasp_data", ["model", "disunity"], indirect=True)
 def test_e2e(scasp_data):
     (scasp_output, html_output) = scasp_data
-    output = process_output(scasp_output)
+    output = process_human_output(scasp_output)
     assert output["answers"][0]["models"][0]["explanations"] == html_output
 
 
