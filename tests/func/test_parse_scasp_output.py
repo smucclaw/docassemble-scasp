@@ -2,13 +2,28 @@ import pytest
 from lark import Lark
 from lark import Transformer
 
+from docassemble.scasp.responseparser import annotate_indents
 
-class MyTransformer(Transformer):
+
+class JustificationTransformer(Transformer):
 
     def justification_tree(self, items):
-        x = f"Head: {items[0]}, justified by {items[1]}"
-        print(x)
-        return x
+        return items
+
+    def justification_elem(self, items):
+        return items[0]
+
+    def justification(self, items):
+        return items[0]
+
+    def answer(self, items):
+        return items[2]
+
+    def answer_block(self, items):
+        return items[0]
+
+    def value(self, items):
+        return items[1:]
 
     def atom(self, items):
         # Here we always get [Term(XX, value)]
@@ -23,8 +38,9 @@ class MyTransformer(Transformer):
         return items[0]
 
     def term_list(self, items):
-        terms = ", ".join(items[1:])
+        terms = ", ".join(items)
         return terms
+
 
 json_parser = Lark(r"""
     ?value: query answer_block+
@@ -33,7 +49,7 @@ json_parser = Lark(r"""
     answer_block: "ANSWER:" answer "MODEL:" model "BINDINGS:" binding+
     answer: INT "(in" DECIMAL "ms)" justification
     justification: "JUSTIFICATION_TREE:" justification_tree "global_constraint."?
-    justification_tree: term ":-" justification_elem (","? justification_elem)* "."
+    justification_tree: term ":-" "{{UP}}" justification_elem (","? justification_elem)* "."? "{{DOWN}}"
     justification_elem: term | justification_tree
 
     term : atom | functor
@@ -55,11 +71,54 @@ json_parser = Lark(r"""
 
     """, start='value')
 
+model1_list = ['winner_of_game(1, testgame)',
+               'player(1)',
+               'player(2)',
+               'game(testgame)',
+               ['player_in_game(1, testgame)',
+                'chs(player_in_game(1, testgame))',
+                ['abducible(player_in_game(1, testgame))',
+                 'abducible(player_in_game(1, testgame))']],
+               ['player_in_game(2, testgame)',
+                'chs(player_in_game(2, testgame))',
+                ['abducible(player_in_game(2, testgame))',
+                 'abducible(player_in_game(2, testgame))']],
+               ['player_threw_sign(1, rock)',
+                'chs(player_threw_sign(1, rock))',
+                ['abducible(player_threw_sign(1, rock))',
+                 'abducible(player_threw_sign(1, rock))']],
+               ['player_threw_sign(2, scissors)',
+                'chs(player_threw_sign(2, scissors))',
+                ['abducible(player_threw_sign(2, scissors))',
+                 'abducible(player_threw_sign(2, scissors))']],
+               'sign_beats_sign(rock, scissors)']
 
-@pytest.mark.parametrize("scasp_output", ["mortal", "model1"], indirect=True)
-def test_1(scasp_output):
+
+@pytest.mark.parametrize("scasp_output", ["mortal"], indirect=True)
+def test_mortal(scasp_output):
     scasp_output_text = scasp_output
-    tree = json_parser.parse(scasp_output_text)
-    MyTransformer().transform(tree)
-    print(tree.pretty())
+    indents = annotate_indents(scasp_output_text)
 
+    tree = json_parser.parse(indents)
+    transformed = JustificationTransformer().transform(tree)
+    assert transformed == [['mortal(socrates)', 'human(socrates)']]
+
+
+@pytest.mark.parametrize("scasp_output", ["model1"], indirect=True)
+def test_model1(scasp_output):
+    scasp_output_text = scasp_output
+    indents = annotate_indents(scasp_output_text)
+
+    tree = json_parser.parse(indents)
+    transformed = JustificationTransformer().transform(tree)
+    assert transformed == [model1_list]
+
+
+@pytest.mark.parametrize("scasp_output", ["model"], indirect=True)
+def test_model(scasp_output):
+    scasp_output_text = scasp_output
+    indents = annotate_indents(scasp_output_text)
+
+    tree = json_parser.parse(indents)
+    transformed = JustificationTransformer().transform(tree)
+    assert len(transformed) == 6
