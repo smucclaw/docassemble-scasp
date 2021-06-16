@@ -41,6 +41,11 @@ class JustificationTransformer(Transformer):
         terms = ", ".join(items)
         return terms
 
+    def variable(self, items):
+        result = f"{items[0]}"
+        if len(items) > 1:
+            result += f" | {{{items[1]} {items[2]} {items[3]}}}"
+        return result
 
 json_parser = Lark(r"""
     ?value: query answer_block+
@@ -52,19 +57,26 @@ json_parser = Lark(r"""
     justification_tree: term ":-" "{{UP}}" justification_elem (","? justification_elem)* "."? "{{DOWN}}"
     justification_elem: term | justification_tree
 
-    term : atom | functor
+    term : atom | functor | variable
+    variable : VARNAME ("|" "{" VARNAME BIND_OP atom "}")?
     atom : CNAME | INT
     functor : atom "(" term_list ")" 
     term_list : term ("," term)*
 
     model : "{" term_list "}"
     
-    binding: WORD "=" atom
+    binding: VARNAME BIND_OP atom
+    
+    BIND_OP: "=" | "\="
+    VARNAME: ("_"|UCASE_LETTER) ("_"|LETTER|DIGIT)*
     
     %import common.INT
     %import common.DECIMAL
     %import common.WORD
     %import common.CNAME
+    %import common.UCASE_LETTER
+    %import common.LETTER
+    %import common.DIGIT
     %import common.SIGNED_NUMBER
     %import common.WS
     %ignore WS
@@ -93,6 +105,38 @@ model1_list = ['winner_of_game(1, testgame)',
                  'abducible(player_threw_sign(2, scissors))']],
                'sign_beats_sign(rock, scissors)']
 
+disunity_list = ['winner_of_game(P | {P \= 1}, G)',
+    ['player(P | {P \= 1})',
+        'chs(player(P | {P \= 1}))',
+        ['abducible(player(P | {P \= 1}))',
+            'abducible(player(P | {P \= 1}))']],
+    ['player(1)',
+        'chs(player(1))',
+        'proved(player(1))',
+        ['abducible(player(1))',
+            'abducible(player(1))',
+            'proved(abducible(player(1)))']],
+    ['game(G)',
+        'chs(game(G))',
+        ['abducible(game(G))',
+            'abducible(game(G))']],
+    ['player_in_game(P | {P \= 1}, G)',
+        'chs(player_in_game(P | {P \= 1}, G))',
+        ['abducible(player_in_game(P | {P \= 1}, G))',
+            'abducible(player_in_game(P | {P \= 1}, G))']],
+    ['player_in_game(1, G)',
+        'chs(player_in_game(1, G))',
+        ['abducible(player_in_game(1, G))',
+            'abducible(player_in_game(1, G))']],
+    ['player_threw_sign(P | {P \= 1}, rock)',
+        'chs(player_threw_sign(P | {P \= 1}, rock))',
+        ['abducible(player_threw_sign(P | {P \= 1}, rock))',
+            'abducible(player_threw_sign(P | {P \= 1}, rock))']],
+    ['player_threw_sign(1, scissors)',
+        'chs(player_threw_sign(1, scissors))',
+        ['abducible(player_threw_sign(1, scissors))',
+            'abducible(player_threw_sign(1, scissors))']],
+    'sign_beats_sign(rock, scissors)']
 
 @pytest.mark.parametrize("scasp_output", ["mortal"], indirect=True)
 def test_mortal(scasp_output):
@@ -122,3 +166,13 @@ def test_model(scasp_output):
     tree = json_parser.parse(indents)
     transformed = JustificationTransformer().transform(tree)
     assert len(transformed) == 6
+
+
+@pytest.mark.parametrize("scasp_output", ["disunity"], indirect=True)
+def test_model(scasp_output):
+    scasp_output_text = scasp_output
+    indents = annotate_indents(scasp_output_text)
+
+    tree = json_parser.parse(indents)
+    transformed = JustificationTransformer().transform(tree)
+    assert transformed == [disunity_list]
