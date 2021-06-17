@@ -51,7 +51,7 @@ json_parser = Lark(r"""
     ?value: query answer_block+
 
     query : "QUERY:?-" term "."
-    answer_block: "ANSWER:" answer "MODEL:" model "BINDINGS:" binding+
+    answer_block: ("ANSWER:" answer "MODEL:" model "BINDINGS:" binding+) | "no models"
     answer: INT "(in" DECIMAL "ms)" justification
     justification: "JUSTIFICATION_TREE:" justification_tree "global_constraint."?
     justification_tree: term ":-" "{{UP}}" justification_elem (","? justification_elem)* "."? "{{DOWN}}"
@@ -176,3 +176,12 @@ def test_model(scasp_output):
     tree = json_parser.parse(indents)
     transformed = JustificationTransformer().transform(tree)
     assert transformed == [disunity_list]
+
+@pytest.mark.parametrize("scasp_output", ["no_model"], indirect=True)
+def test_model(scasp_output):
+    scasp_output_text = scasp_output
+    indents = annotate_indents(scasp_output_text)
+
+    tree = json_parser.parse(indents)
+    transformed = JustificationTransformer().transform(tree)
+    assert transformed == ""
