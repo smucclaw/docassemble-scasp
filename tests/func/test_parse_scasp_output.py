@@ -14,7 +14,11 @@ class JustificationTransformer(Transformer):
         return items[0]
 
     def justification(self, items):
-        return items[0]
+        if type(items[0]) == str:
+            # justification is single term.
+            return [items[0]]
+        else:
+            return items[0]
 
     def answer(self, items):
         return items[2]
@@ -26,7 +30,6 @@ class JustificationTransformer(Transformer):
         return items[1:]
 
     def atom(self, items):
-        # Here we always get [Term(XX, value)]
         return items[0].value
 
     def functor(self, items):
@@ -34,7 +37,6 @@ class JustificationTransformer(Transformer):
         return f"{items[0]}({params})"
 
     def term(self, items):
-        # Here we always get [Term(XX, value)]
         return items[0]
 
     def term_list(self, items):
@@ -48,19 +50,21 @@ class JustificationTransformer(Transformer):
         return result
 
 json_parser = Lark(r"""
-    ?value: query answer_block+
+
+    value: query ( answer_block+ | "no models")
 
     query : "QUERY:?-" term "."
-    answer_block: "ANSWER:" answer "MODEL:" model "BINDINGS:" binding+
+    answer_block: "ANSWER:" answer "MODEL:" model "BINDINGS:" (binding+)?
     answer: INT "(in" DECIMAL "ms)" justification
-    justification: "JUSTIFICATION_TREE:" justification_tree "global_constraint."?
+    justification: "JUSTIFICATION_TREE:" justification_elem ","? "global_constraint."?
+
     justification_tree: term ":-" "{{UP}}" justification_elem (","? justification_elem)* "."? "{{DOWN}}"
     justification_elem: term | justification_tree
 
     term : atom | functor | variable
     variable : VARNAME ("|" "{" VARNAME BIND_OP atom "}")?
     atom : CNAME | INT
-    functor : atom "(" term_list ")" 
+    functor : atom "(" term_list ")"
     term_list : term ("," term)*
 
     model : "{" term_list "}"
@@ -106,37 +110,40 @@ model1_list = ['winner_of_game(1, testgame)',
                'sign_beats_sign(rock, scissors)']
 
 disunity_list = ['winner_of_game(P | {P \= 1}, G)',
-    ['player(P | {P \= 1})',
-        'chs(player(P | {P \= 1}))',
-        ['abducible(player(P | {P \= 1}))',
-            'abducible(player(P | {P \= 1}))']],
-    ['player(1)',
-        'chs(player(1))',
-        'proved(player(1))',
-        ['abducible(player(1))',
-            'abducible(player(1))',
-            'proved(abducible(player(1)))']],
-    ['game(G)',
-        'chs(game(G))',
-        ['abducible(game(G))',
-            'abducible(game(G))']],
-    ['player_in_game(P | {P \= 1}, G)',
-        'chs(player_in_game(P | {P \= 1}, G))',
-        ['abducible(player_in_game(P | {P \= 1}, G))',
-            'abducible(player_in_game(P | {P \= 1}, G))']],
-    ['player_in_game(1, G)',
-        'chs(player_in_game(1, G))',
-        ['abducible(player_in_game(1, G))',
-            'abducible(player_in_game(1, G))']],
-    ['player_threw_sign(P | {P \= 1}, rock)',
-        'chs(player_threw_sign(P | {P \= 1}, rock))',
-        ['abducible(player_threw_sign(P | {P \= 1}, rock))',
-            'abducible(player_threw_sign(P | {P \= 1}, rock))']],
-    ['player_threw_sign(1, scissors)',
-        'chs(player_threw_sign(1, scissors))',
-        ['abducible(player_threw_sign(1, scissors))',
-            'abducible(player_threw_sign(1, scissors))']],
-    'sign_beats_sign(rock, scissors)']
+                 ['player(P | {P \= 1})',
+                  'chs(player(P | {P \= 1}))',
+                  ['abducible(player(P | {P \= 1}))',
+                   'abducible(player(P | {P \= 1}))']],
+                 ['player(1)',
+                  'chs(player(1))',
+                  'proved(player(1))',
+                  ['abducible(player(1))',
+                   'abducible(player(1))',
+                   'proved(abducible(player(1)))']],
+                 ['game(G)',
+                  'chs(game(G))',
+                  ['abducible(game(G))',
+                   'abducible(game(G))']],
+                 ['player_in_game(P | {P \= 1}, G)',
+                  'chs(player_in_game(P | {P \= 1}, G))',
+                  ['abducible(player_in_game(P | {P \= 1}, G))',
+                   'abducible(player_in_game(P | {P \= 1}, G))']],
+                 ['player_in_game(1, G)',
+                  'chs(player_in_game(1, G))',
+                  ['abducible(player_in_game(1, G))',
+                   'abducible(player_in_game(1, G))']],
+                 ['player_threw_sign(P | {P \= 1}, rock)',
+                  'chs(player_threw_sign(P | {P \= 1}, rock))',
+                  ['abducible(player_threw_sign(P | {P \= 1}, rock))',
+                   'abducible(player_threw_sign(P | {P \= 1}, rock))']],
+                 ['player_threw_sign(1, scissors)',
+                  'chs(player_threw_sign(1, scissors))',
+                  ['abducible(player_threw_sign(1, scissors))',
+                   'abducible(player_threw_sign(1, scissors))']],
+                 'sign_beats_sign(rock, scissors)']
+
+no_bindings_list = ['winner_of_game(jason, game)']
+
 
 @pytest.mark.parametrize("scasp_output", ["mortal"], indirect=True)
 def test_mortal(scasp_output):
@@ -169,10 +176,30 @@ def test_model(scasp_output):
 
 
 @pytest.mark.parametrize("scasp_output", ["disunity"], indirect=True)
-def test_model(scasp_output):
+def test_disunity(scasp_output):
     scasp_output_text = scasp_output
     indents = annotate_indents(scasp_output_text)
 
     tree = json_parser.parse(indents)
     transformed = JustificationTransformer().transform(tree)
     assert transformed == [disunity_list]
+
+
+@pytest.mark.parametrize("scasp_output", ["no_model"], indirect=True)
+def test_no_model(scasp_output):
+    scasp_output_text = scasp_output
+    indents = annotate_indents(scasp_output_text)
+
+    tree = json_parser.parse(indents)
+    transformed = JustificationTransformer().transform(tree)
+    assert transformed == []
+
+
+@pytest.mark.parametrize("scasp_output", ["no_bindings"], indirect=True)
+def test_no_bindings(scasp_output):
+    scasp_output_text = scasp_output
+    indents = annotate_indents(scasp_output_text)
+
+    tree = json_parser.parse(indents)
+    transformed = JustificationTransformer().transform(tree)
+    assert transformed == [no_bindings_list]
