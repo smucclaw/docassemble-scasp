@@ -20,6 +20,9 @@ class JustificationTransformer(Transformer):
         return items[2]
 
     def answer_block(self, items):
+        if len(items) == 0 :
+            return items
+        
         return items[0]
 
     def value(self, items):
@@ -51,16 +54,16 @@ json_parser = Lark(r"""
     ?value: query answer_block+
 
     query : "QUERY:?-" term "."
-    answer_block: ("ANSWER:" answer "MODEL:" model "BINDINGS:" binding+) | "no models"
+    answer_block: ("ANSWER:" answer "MODEL:" model "BINDINGS:" (binding+)?) | "no models"
     answer: INT "(in" DECIMAL "ms)" justification
     justification: "JUSTIFICATION_TREE:" justification_tree "global_constraint."?
-    justification_tree: term ":-" "{{UP}}" justification_elem (","? justification_elem)* "."? "{{DOWN}}"
+    justification_tree: term (":-" "{{UP}}" justification_elem (","? justification_elem)* "."? "{{DOWN}}")?
     justification_elem: term | justification_tree
 
     term : atom | functor | variable
     variable : VARNAME ("|" "{" VARNAME BIND_OP atom "}")?
     atom : CNAME | INT
-    functor : atom "(" term_list ")" 
+    functor : atom "(" term_list ")"","? 
     term_list : term ("," term)*
 
     model : "{" term_list "}"
@@ -138,6 +141,8 @@ disunity_list = ['winner_of_game(P | {P \= 1}, G)',
             'abducible(player_threw_sign(1, scissors))']],
     'sign_beats_sign(rock, scissors)']
 
+no_bindings_list = ['winner_of_game(jason, game)']
+
 @pytest.mark.parametrize("scasp_output", ["mortal"], indirect=True)
 def test_mortal(scasp_output):
     scasp_output_text = scasp_output
@@ -184,4 +189,13 @@ def test_model(scasp_output):
 
     tree = json_parser.parse(indents)
     transformed = JustificationTransformer().transform(tree)
-    assert transformed == ""
+    assert transformed == [[]]
+
+@pytest.mark.parametrize("scasp_output", ["no_bindings"], indirect=True)
+def test_model(scasp_output):
+    scasp_output_text = scasp_output
+    indents = annotate_indents(scasp_output_text)
+
+    tree = json_parser.parse(indents)
+    transformed = JustificationTransformer().transform(tree)
+    assert transformed == [no_bindings_list]
